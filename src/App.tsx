@@ -1796,10 +1796,9 @@ const App: React.FC = () => {
             )}
             {/* Loop selection and delay controls (moved above the curve) */}
             {nativePitchData.times.length > 0 && (
-              <div style={{ margin: '0.5rem 0 0.5rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }} className="loop-controls-container">
-                <div style={{ width: '100%', maxWidth: 400, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 12 }}>Loop region:</span>
-                  <span style={{ fontSize: 12, flex: 1 }}>{loopStart.toFixed(2)}s - {loopEnd.toFixed(2)}s</span>
+              <div className="loop-controls-wrapper">
+                <div className="loop-region-display">
+                  <span>Loop region: {loopStart.toFixed(2)}s - {loopEnd.toFixed(2)}s</span>
                   <button
                     onClick={() => {
                       // Get accurate duration from PitchDataManager, otherwise fall back to pitch data
@@ -1815,26 +1814,14 @@ const App: React.FC = () => {
                       }
                     }}
                     title="Reset Loop Region"
-                    style={{
-                      padding: '2px 6px',
-                      borderRadius: '50%',
-                      border: 'none',
-                      background: 'transparent',
-                      color: '#1976d2',
-                      fontSize: '1.1rem',
-                      cursor: 'pointer',
-                      minWidth: 0,
-                      minHeight: 0,
-                      lineHeight: 1,
-                      marginLeft: 8,
-                    }}
+                    className="reset-button"
                   >
                     ↺
                   </button>
                 </div>
                 
-                <div className="loop-delay-controls">
-                  <span style={{ fontSize: 12 }}>Loop delay (ms):</span>
+                <div className="loop-controls-row">
+                  <span>Loop delay (ms):</span>
                   <input
                     type="number"
                     min={0}
@@ -1842,11 +1829,10 @@ const App: React.FC = () => {
                     step={50}
                     value={loopDelay}
                     onChange={e => setLoopDelay(Number(e.target.value))}
-                    style={{ width: 60 }}
                     className="loop-delay-input"
                   />
                   <button
-                    style={{ fontSize: 12, padding: '2px 8px', marginLeft: 8 }}
+                    className="loop-visible-button"
                     title="Set loop to visible region"
                     disabled={!nativeChartInstance}
                     onClick={() => {
@@ -1875,8 +1861,8 @@ const App: React.FC = () => {
                   </button>
                 </div>
                 
-                <div style={{ width: '100%', maxWidth: 400, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }} className="auto-loop-label">
+                <div className="loop-controls-row">
+                  <label className="auto-loop-label">
                     <input
                       type="checkbox"
                       checked={autoLoopEnabled}
@@ -1888,7 +1874,7 @@ const App: React.FC = () => {
                   {/* Jump to playback position button - only for long videos */}
                   {nativeMediaDuration > 30 && (
                     <button
-                      style={{ fontSize: 12, padding: '2px 8px', marginLeft: 'auto' }}
+                      className="jump-button"
                       title="Jump to current playback position"
                       disabled={!nativeChartInstance || !getActiveMediaElement()}
                       onClick={jumpToPlaybackPosition}
@@ -1984,6 +1970,62 @@ const App: React.FC = () => {
         .pitch-graph-container {
           touch-action: pinch-zoom pan-x pan-y;
         }
+        
+        /* Loop controls styling */
+        .loop-controls-wrapper {
+          text-align: center;
+          margin: 0.5rem auto;
+          max-width: 500px;
+        }
+        
+        .loop-region-display {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 8px;
+          font-size: 12px;
+        }
+        
+        .reset-button {
+          padding: 2px 6px;
+          border-radius: 50%;
+          border: none;
+          background: transparent;
+          color: #1976d2;
+          font-size: 1.1rem;
+          cursor: pointer;
+          min-width: 0;
+          min-height: 0;
+          line-height: 1;
+        }
+        
+        .loop-controls-row {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 8px;
+          font-size: 12px;
+        }
+        
+        .loop-delay-input {
+          width: 80px;
+          min-width: 80px;
+        }
+        
+        .loop-visible-button, .jump-button {
+          font-size: 12px;
+          padding: 2px 8px;
+        }
+        
+        .auto-loop-label {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 12px;
+        }
+        
         @media (max-width: 768px) {
           .container {
             width: 100vw;
@@ -2014,42 +2056,21 @@ const App: React.FC = () => {
             font-size: 0.95rem !important;
             padding: 4px 8px !important;
           }
-          .loop-delay-input {
-            width: 80px !important;
-            min-width: 80px !important;
-          }
+          
           .auto-loop-label {
             white-space: normal;
             line-height: 1.2;
           }
-          .loop-delay-controls {
-            display: flex;
+          
+          .loop-controls-row {
             flex-wrap: wrap;
-            align-items: center;
-            gap: 8px;
-            width: 100%;
-            max-width: 400px;
           }
         }
         
         /* Desktop styles */
         @media (min-width: 769px) {
-          .loop-controls-container {
-            width: 600px;
-            max-width: 90%;
-            margin-left: auto;
-            margin-right: auto;
-          }
-          .loop-delay-input {
-            width: 80px !important;
-            min-width: 80px !important;
-          }
-          .loop-delay-controls {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            width: 100%;
-            max-width: 600px;
+          .loop-controls-wrapper {
+            max-width: 500px;
           }
         }
         
