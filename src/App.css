@@ -1,0 +1,153 @@
+html, body, #root, .App {
+  width: 100vw;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+#root {
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+.container, main, section, .pitch-graph-container {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  max-width: 1000px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.header {
+  padding: 0.75rem;
+  background: #1976d2;
+  color: white;
+  text-align: center;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.footer {
+  padding: 0.5rem;
+  background: #f5f5f5;
+  color: #888;
+  text-align: center;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .container {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    padding-left: max(2vw, env(safe-area-inset-left));
+    padding-right: max(2vw, env(safe-area-inset-right));
+    margin: 0;
+  }
+  .pitch-graph-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+  main, section {
+    /* Remove debug borders */
+  }
+  main {
+    padding: 1rem 0 !important;
+  }
+  section {
+    margin-bottom: 1rem !important;
+  }
+  h2 {
+    font-size: 1.25rem !important;
+    margin: 0.5rem 0 !important;
+  }
+  button {
+    padding: 6px 16px !important;
+    font-size: 0.9rem !important;
+  }
+  audio, video {
+    margin-bottom: 0.75rem !important;
+  }
+}
+
+/* Remove unused styles */
+.logo, .card, .read-the-docs {
+  display: none;
+}
+
+/* Add stricter rules to force all children to fit the container */
+main, section, .graph-container {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* Ensure all children of main, section, and .graph-container also fit */
+main *, section *, .graph-container * {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* Remove debug logs */
+.debug-log {
+  display: none;
+}

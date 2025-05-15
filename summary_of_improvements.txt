@@ -1,0 +1,46 @@
+# Summary of Improvements to the Japanese Pitch Accent Training Web App
+
+## Today's Improvements
+
+1. **Fixed "Jump to Playback" Functionality**
+   - Corrected the issue where the chart view wasn't updating properly when jumping to the current playback position
+   - Exposed internal state management functions from the PitchGraph component
+   - Added timeouts to ensure data loading completes before updating the view
+   - Improved coordination between data loading and view changes
+
+2. **Added Error Handling for Pitch Detection**
+   - Fixed errors occurring when processing incomplete frames at the end of audio files
+   - Added robust error handling throughout the pitch detection process
+   - Implemented proper TypeScript error handling for unknown error types
+
+3. **Improved End-of-File Pitch Detection**
+   - Enhanced the pitch detection to handle the end of audio files by implementing zero-padding
+   - Ensured the entire pitch curve is displayed including the final segments
+   - Fixed frame size issues when nearing the end of audio files or segments
+   - Implemented special handling for file boundaries to avoid data loss
+
+4. **Adjusted Pitch Detection Parameters**
+   - Made it possible to detect more speech segments by adjusting MIN_CLARITY threshold
+
+## Future Concern: Navigating Long Videos
+
+When working with long videos, the current user flow for finding and practicing specific sections is somewhat cumbersome:
+
+**Current workflow:**
+1. User plays the video to find relevant content
+2. User clicks "Jump to playback" to see that section in the pitch curve
+3. User must click "Loop visible" to set the loop region
+4. User then must click play again in the video player
+
+**Potential solutions to consider:**
+1. **Auto-loop current view**: When jumping to playback position, automatically set the loop region to the current view
+2. **Preview without changing loop**: Add a "preview mode" that shows the pitch at the current playback time without changing the loop region
+3. **Seek bar integration**: Integrate a minimap or timeline below the video player showing pitch intensity, allowing direct navigation
+4. **Segment bookmarking**: Allow users to bookmark important segments for quick navigation
+5. **Side-by-side navigation**: Split screen view showing video thumbnails alongside pitch curves for easier navigation
+
+These improvements would maintain current functionality while making it easier for users to navigate and practice specific sections in longer videos. 
+
+**Chosen solution:**
+**Auto-loop current view**: When jumping to playback position, automatically set the loop region to the current view
+This sounds good. Maybe have it as a checkbox (default: false) and otherwise perform a "loop visible" after "jump to playback" automatically as well as after panning or zooming.
