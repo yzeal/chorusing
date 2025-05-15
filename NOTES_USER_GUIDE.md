@@ -45,7 +45,9 @@ While there is no hard limit on recording length, browser performance may degrad
 
 ### Additional Features
 
-- **Auto-loop checkbox**: When enabled, the loop region will automatically match the visible area when you pan or zoom
+- **Drag loop selection edges**: Drag the blue edges of the loop selection area on the graph to select the segment you want to practice
+- **Drag graph edges**: Drag from the margins of the graph to bring the loop selection edges into your current view any time
+- **Auto-loop checkbox**: When enabled, the loop region will automatically match the visible area when you pan
 - **Loop delay**: Adjusts the pause time (in milliseconds) between loop repetitions
 - **Jump to playback**: Jumps the view to center around the current playback position (only available for long videos)
 
@@ -55,16 +57,17 @@ While there is no hard limit on recording length, browser performance may degrad
    - Load a native recording using the "Load Native Recording" button
    - Record your own voice using the microphone button
    - Visually compare your pitch pattern with the native speaker
+   - The overall shape of the curve is important. Its position on the y-axis can differ depending on the natural pitch of your voice
    
 2. **Focus on specific segments**:
    - Zoom in on challenging parts of the utterance
    - Set a tight loop region around difficult pitch patterns
-   - Adjust the loop delay if needed to give yourself time to repeat
+   - Adjust the loop delay if needed to give yourself time to breathe between repetitions
    
 3. **Mobile-specific tips**:
-   - Hold your device in landscape orientation for better visualization
+   - Hold your device in portait orientation for better visualization
    - Use small, deliberate pinch gestures for precise zooming
-   - Tap the reset zoom button (↺) if you get lost
+   - Tap the reset zoom button on the curve (↺) if you get lost
 
 ## Pitch Visualization Details
 
@@ -72,8 +75,5 @@ The pitch visualization shows the fundamental frequency (pitch) of the voice ove
 
 - **Blue line**: Your recorded voice
 - **Green line**: Native speaker's voice
-- **Solid lines**: Voiced speech segments (vowels, voiced consonants)
-- **Dashed lines**: Transitions or less reliable pitch segments
-- **Vertical red line**: Current playback position
 
 The y-axis shows frequency in Hertz (Hz), typically ranging from 50-500 Hz, with male voices generally lower (80-180 Hz) and female voices higher (160-300 Hz). 
