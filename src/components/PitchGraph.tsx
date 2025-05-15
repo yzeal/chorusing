@@ -1338,7 +1338,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
           tension: 0.3,    // Moderate curve tension for smooth lines
           // Store the voicing information for our custom renderer
           segment: {
-            borderColor: (ctx: SegmentContext) => segmentInfo[ctx.p1DataIndex]?.isVoiced ? color : '#ff6b6b',
+            borderColor: (ctx: SegmentContext) => segmentInfo[ctx.p1DataIndex]?.isVoiced ? color : '#ff6b6b00',
             borderDash: (ctx: SegmentContext) => segmentInfo[ctx.p1DataIndex]?.isVoiced ? [] : [5, 5]
           }
         },
