@@ -1796,7 +1796,7 @@ const App: React.FC = () => {
             )}
             {/* Loop selection and delay controls (moved above the curve) */}
             {nativePitchData.times.length > 0 && (
-              <div style={{ margin: '0.5rem 0 0.5rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <div style={{ margin: '0.5rem 0 0.5rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }} className="loop-controls-container">
                 <div style={{ width: '100%', maxWidth: 400, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 12 }}>Loop region:</span>
                   <span style={{ fontSize: 12, flex: 1 }}>{loopStart.toFixed(2)}s - {loopEnd.toFixed(2)}s</span>
@@ -1832,7 +1832,8 @@ const App: React.FC = () => {
                     ↺
                   </button>
                 </div>
-                <div style={{ width: '100%', maxWidth: 400, display: 'flex', alignItems: 'center', gap: 8 }}>
+                
+                <div className="loop-delay-controls">
                   <span style={{ fontSize: 12 }}>Loop delay (ms):</span>
                   <input
                     type="number"
@@ -1842,6 +1843,7 @@ const App: React.FC = () => {
                     value={loopDelay}
                     onChange={e => setLoopDelay(Number(e.target.value))}
                     style={{ width: 60 }}
+                    className="loop-delay-input"
                   />
                   <button
                     style={{ fontSize: 12, padding: '2px 8px', marginLeft: 8 }}
@@ -1871,30 +1873,29 @@ const App: React.FC = () => {
                   >
                     Loop visible
                   </button>
+                </div>
+                
+                <div style={{ width: '100%', maxWidth: 400, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }} className="auto-loop-label">
+                    <input
+                      type="checkbox"
+                      checked={autoLoopEnabled}
+                      onChange={(e) => setAutoLoopEnabled(e.target.checked)}
+                    />
+                    Auto-loop visible area
+                  </label>
                   
-                  {/* Add the Auto-loop checkbox near the other controls */}
-                  <div style={{ width: '100%', maxWidth: 400, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <label style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <input
-                        type="checkbox"
-                        checked={autoLoopEnabled}
-                        onChange={(e) => setAutoLoopEnabled(e.target.checked)}
-                      />
-                      Auto-loop visible area
-                    </label>
-                    
-                    {/* Jump to playback position button - only for long videos */}
-                    {nativeMediaDuration > 30 && (
-                      <button
-                        style={{ fontSize: 12, padding: '2px 8px', marginLeft: 'auto' }}
-                        title="Jump to current playback position"
-                        disabled={!nativeChartInstance || !getActiveMediaElement()}
-                        onClick={jumpToPlaybackPosition}
-                      >
-                        Jump to playback
-                      </button>
-                    )}
-                  </div>
+                  {/* Jump to playback position button - only for long videos */}
+                  {nativeMediaDuration > 30 && (
+                    <button
+                      style={{ fontSize: 12, padding: '2px 8px', marginLeft: 'auto' }}
+                      title="Jump to current playback position"
+                      disabled={!nativeChartInstance || !getActiveMediaElement()}
+                      onClick={jumpToPlaybackPosition}
+                    >
+                      Jump to playback
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -2013,7 +2014,43 @@ const App: React.FC = () => {
             font-size: 0.95rem !important;
             padding: 4px 8px !important;
           }
+          .loop-delay-input {
+            width: 80px !important;
+            min-width: 80px !important;
+          }
+          .auto-loop-label {
+            white-space: normal;
+            line-height: 1.2;
+          }
+          .loop-delay-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            max-width: 400px;
+          }
         }
+        
+        /* Desktop styles */
+        @media (min-width: 769px) {
+          .loop-controls-container {
+            width: 600px;
+            max-width: 90%;
+          }
+          .loop-delay-input {
+            width: 80px !important;
+            min-width: 80px !important;
+          }
+          .loop-delay-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            max-width: 600px;
+          }
+        }
+        
         body {
           overflow-x: hidden;
         }
