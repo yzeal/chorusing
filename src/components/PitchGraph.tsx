@@ -1925,7 +1925,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
             layout: {
               padding: {
                 left: 0,
-                right: 15, // Add right padding to give more space for the loop handle
+                right: 30, // Add right padding to give more space for the loop handle
                 top: 0,
                 bottom: 0
               }

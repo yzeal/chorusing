@@ -2037,6 +2037,8 @@ const App: React.FC = () => {
           .loop-controls-container {
             width: 600px;
             max-width: 90%;
+            margin-left: auto;
+            margin-right: auto;
           }
           .loop-delay-input {
             width: 80px !important;
