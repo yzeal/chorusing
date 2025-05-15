@@ -42,3 +42,11 @@
   - Reset buttons should only be visible/active when the value differs from default
 
 # Add more notes here as new features/ideas arise 
+
+
+
+Adding navigation pages
+Adding a user guide and settings page with icon buttons is a solid approach:
+Use standard icons like ? for help/guide and ⚙️ for settings
+You could implement these in a header/navbar component
+React Router would be perfect for handling navigation between pages

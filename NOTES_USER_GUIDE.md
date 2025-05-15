@@ -23,7 +23,7 @@ For the best experience with the Pitch Accent Training app, consider these guide
 - Practice the same segment multiple times rather than recording longer passages
 
 ### Technical Considerations
-While there is no hard limit on recording length, browser performance may degrade with very long recordings, especially on mobile devices. The app has been optimized for recordings in the 5-30 second range, which is ideal for focused practice.
+While there is no hard limit on recording length, browser performance may degrade with very long recordings, especially on mobile devices. The app has been optimized for recordings in the 5-30 second range, which is ideal for focused practice. Loading large video files on mobile devices can likewise be problematic. Consider editing large files or making short screen recordings of segments you want to practice.
 
 # Japanese Pitch Accent Visualization - User Guide
 
