@@ -1882,7 +1882,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
           height: 220, /* Increased from 150 to give more vertical space */
           width: '100%',
           maxWidth: '100%',
-          paddingRight: '15px', /* Add right padding to match chart layout padding */
+          paddingRight: '0px', /* No right padding */
           position: 'relative',
           overflow: 'visible', /* Ensure handles are visible outside the container */
         }}
@@ -1925,7 +1925,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
             layout: {
               padding: {
                 left: 0,
-                right: 30, // Add right padding to give more space for the loop handle
+                right: 30, // Add right padding to give more space for the loop handle, IMPORTANT, don't remove this ever!!
                 top: 0,
                 bottom: 0
               }
@@ -2039,7 +2039,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
             height: 180px !important; /* Increased from 150px to give more vertical space on mobile */
             min-height: 180px !important;
             max-height: 180px !important;
-            padding-right: 15px !important; /* Match the desktop padding */
+            padding-right: 0px !important; /* Match the desktop padding, that is no padding on the right */
           }
           .pitch-graph-container::-webkit-scrollbar {
             display: none;
