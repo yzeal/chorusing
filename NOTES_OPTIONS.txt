@@ -1,0 +1,28 @@
+# Options Menu Notes
+
+## Options Menu 
+- Adjustable y-axis range
+- Option to choose smoothing/filtering method for pitch curves
+- Keyboard shortcuts customization
+  - Play/Pause native recording: spacebar
+  - Loop visivle: l
+  - Start/stop user microphone recording: r
+  - Play/Pause user recording: e
+- **Microphone selection dropdown for desktop browsers only** (use `enumerateDevices` and `getUserMedia` with `deviceId`; hide on mobile for cleaner UI and because it's not supported)
+- **Tooltip configuration options:**
+  - Enable/disable tooltips globally
+- **Pitch detection range settings:**
+  - Allow users to adjust minimum and maximum pitch detection thresholds
+  - Default: 60-500 Hz (suitable for speech)
+  - Extended range option: up to 1000-1500 Hz (for singing or high-pitched voices)
+  - Warning that very wide ranges may affect detection accuracy for normal speech
+- **Loop overlay appearance:**
+  - Adjust transparency/color of loop overlay
+
+## UI/UX Design Guidelines
+- **Individual reset buttons:**
+  - Every user-configurable setting should have its own small reset button
+  - Reset buttons should have tooltip text "Restore default value"
+  - Use the same design as "Reset loop region" button (small circular arrow)
+  - Position reset buttons consistently next to each option for intuitive use
+  - Reset buttons should only be visible/active when the value differs from default

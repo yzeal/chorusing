@@ -48,6 +48,7 @@ For the best experience with the Chorusing Training app, consider these guidelin
 ### Technical Considerations
 While there is no hard limit on recording length, browser performance may degrade with very long recordings, especially on mobile devices. The app has been optimized for recordings in the 5-30 second range, which is ideal for focused practice. Loading large video files on mobile devices can likewise be problematic. Consider editing large files or making short screen recordings of segments you want to practice.
 
+
 ### Caution!
 On the iPhone, starting a recording inside a web browser will cause all audio output to use the ringer's audio level. This can by default be very loud!
 
@@ -56,6 +57,9 @@ To gain control over the ringer level on iPohne, you can:
 - **Go to Sounds & Haptics**: Scroll down and tap on "Sounds & Haptics"
 - **Adjust Ringer Volume**: In the "Ringer and Alerts" section, you'll see a slider. Drag the slider left or right to adjust the ringer volume to your desired level
 - **Change with Buttons (Optional)**: If you prefer to use the volume buttons, you can enable "Change with Buttons" by toggling the switch to the right
+
+### Supported File Formats 
+Supported file formats for different browsers and platforms. [TODO: Can you fill this in?]
 
 # Japanese Pitch Accent Visualization - User Guide
 
