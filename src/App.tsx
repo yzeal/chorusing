@@ -3151,32 +3151,7 @@ const App: React.FC = () => {
                 </div>
               )}
               
-              <div className="settings-section">
-                <h3>Interface Settings</h3>
-                <div className="setting-group">
-                  <label className="setting-label">
-                    <span>Tooltips</span>
-                    <div className="setting-description">
-                      Configure when and how tooltips are displayed
-                    </div>
-                  </label>
-                  <div className="setting-placeholder">
-                    <i>Tooltip configuration will be implemented here</i>
-                  </div>
-                </div>
-                
-                <div className="setting-group">
-                  <label className="setting-label">
-                    <span>Loop Overlay Appearance</span>
-                    <div className="setting-description">
-                      Adjust the transparency and color of the loop region overlay
-                    </div>
-                  </label>
-                  <div className="setting-placeholder">
-                    <i>Loop overlay appearance options will be implemented here</i>
-                  </div>
-                </div>
-              </div>
+              
               
               <div className="settings-section">
                 <h3>Advanced Settings</h3>
