@@ -379,13 +379,17 @@ const App: React.FC = () => {
         // Get initial pitch data
         const initialData = pitchManager.current.getPitchDataForTimeRange(0, 30);
         
-        // Apply enhanced smoothing for a more simplified curve
+        // Apply enhanced smoothing with configurable settings
+        const smoothingWindowSize = separateSmoothingSettings ? 
+          getWindowSizeFromSettings(smoothingStyle, nativeSmoothingLevel) : 
+          getWindowSizeFromSettings(smoothingStyle, smoothingLevel);
+        
         const enhancedData = {
           times: initialData.times,
-          pitches: smoothPitch(initialData.pitches, 25)
+          pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
         };
         
-        console.log('[App] Initial pitch data loaded and smoothed');
+        console.log('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
         setNativePitchData(enhancedData);
       } catch (error) {
         console.error('Error processing audio:', error);
@@ -400,13 +404,17 @@ const App: React.FC = () => {
         // Get initial pitch data
         const initialData = pitchManager.current.getPitchDataForTimeRange(0, 30);
         
-        // Apply enhanced smoothing for a more simplified curve
+        // Apply enhanced smoothing with configurable settings
+        const smoothingWindowSize = separateSmoothingSettings ? 
+          getWindowSizeFromSettings(smoothingStyle, nativeSmoothingLevel) : 
+          getWindowSizeFromSettings(smoothingStyle, smoothingLevel);
+        
         const enhancedData = {
           times: initialData.times,
-          pitches: smoothPitch(initialData.pitches, 25)
+          pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
         };
         
-        console.log('[App] Initial pitch data loaded and smoothed');
+        console.log('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
         setNativePitchData(enhancedData);
       } catch (error) {
         console.error('Error processing video:', error);
@@ -454,8 +462,14 @@ const App: React.FC = () => {
         // First apply basic median filter
         const basicSmoothed = medianFilter(pitches, MEDIAN_FILTER_SIZE);
         
-        // Then apply enhanced smoothing for simplified curves
-        const enhancedSmooth = smoothPitch(basicSmoothed, 25);
+        // Then apply enhanced smoothing with configurable settings
+        const smoothingWindowSize = separateSmoothingSettings ?
+          getWindowSizeFromSettings(smoothingStyle, userSmoothingLevel) :
+          getWindowSizeFromSettings(smoothingStyle, smoothingLevel);
+        
+        const enhancedSmooth = smoothPitch(basicSmoothed, smoothingWindowSize);
+        
+        console.log('[App] User recording smoothed with window size:', smoothingWindowSize);
         
         setUserPitchData({ times, pitches: enhancedSmooth });
         
@@ -526,13 +540,17 @@ const App: React.FC = () => {
         // Get initial pitch data
         const initialData = pitchManager.current.getPitchDataForTimeRange(0, 30);
         
-        // Apply enhanced smoothing for a more simplified curve
+        // Apply enhanced smoothing with configurable settings
+        const smoothingWindowSize = separateSmoothingSettings ? 
+          getWindowSizeFromSettings(smoothingStyle, nativeSmoothingLevel) : 
+          getWindowSizeFromSettings(smoothingStyle, smoothingLevel);
+        
         const enhancedData = {
           times: initialData.times,
-          pitches: smoothPitch(initialData.pitches, 25)
+          pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
         };
         
-        console.log('[App] Initial pitch data loaded and smoothed');
+        console.log('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
         setNativePitchData(enhancedData);
       } catch (error) {
         console.error('Error processing audio:', error);
@@ -547,13 +565,17 @@ const App: React.FC = () => {
         // Get initial pitch data
         const initialData = pitchManager.current.getPitchDataForTimeRange(0, 30);
         
-        // Apply enhanced smoothing for a more simplified curve
+        // Apply enhanced smoothing with configurable settings
+        const smoothingWindowSize = separateSmoothingSettings ? 
+          getWindowSizeFromSettings(smoothingStyle, nativeSmoothingLevel) : 
+          getWindowSizeFromSettings(smoothingStyle, smoothingLevel);
+        
         const enhancedData = {
           times: initialData.times,
-          pitches: smoothPitch(initialData.pitches, 25)
+          pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
         };
         
-        console.log('[App] Initial pitch data loaded and smoothed');
+        console.log('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
         setNativePitchData(enhancedData);
       } catch (error) {
         console.error('Error processing video:', error);
@@ -1874,6 +1896,168 @@ const App: React.FC = () => {
     e.target.select();
   };
 
+  // Add after the Y-axis range state variables around line 250
+  // Add smoothing settings state with localStorage persistence
+  const [smoothingStyle, setSmoothingStyle] = useState<string>(() => {
+    const savedValue = localStorage.getItem('smoothingStyle');
+    return savedValue || 'medium'; // 'detailed', 'natural', 'medium', 'simplified'
+  });
+
+  const [smoothingLevel, setSmoothingLevel] = useState<number>(() => {
+    const savedValue = localStorage.getItem('smoothingLevel');
+    return savedValue ? Number(savedValue) : 25; // 0-100 scale
+  });
+
+  const [separateSmoothingSettings, setSeparateSmoothingSettings] = useState<boolean>(() => {
+    const savedValue = localStorage.getItem('separateSmoothingSettings');
+    return savedValue ? savedValue === 'true' : false;
+  });
+
+  const [nativeSmoothingLevel, setNativeSmoothingLevel] = useState<number>(() => {
+    const savedValue = localStorage.getItem('nativeSmoothingLevel');
+    return savedValue ? Number(savedValue) : 25; // 0-100 scale
+  });
+
+  const [userSmoothingLevel, setUserSmoothingLevel] = useState<number>(() => {
+    const savedValue = localStorage.getItem('userSmoothingLevel');
+    return savedValue ? Number(savedValue) : 25; // Changed from 15 to 25 to match current behavior
+  });
+
+  // Add effects to save settings to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('smoothingStyle', smoothingStyle);
+  }, [smoothingStyle]);
+
+  useEffect(() => {
+    localStorage.setItem('smoothingLevel', String(smoothingLevel));
+  }, [smoothingLevel]);
+
+  useEffect(() => {
+    localStorage.setItem('separateSmoothingSettings', String(separateSmoothingSettings));
+  }, [separateSmoothingSettings]);
+
+  useEffect(() => {
+    localStorage.setItem('nativeSmoothingLevel', String(nativeSmoothingLevel));
+  }, [nativeSmoothingLevel]);
+
+  useEffect(() => {
+    localStorage.setItem('userSmoothingLevel', String(userSmoothingLevel));
+  }, [userSmoothingLevel]);
+
+  // Add helper function to convert smoothing settings to window size
+  // Place this after the smoothing functions around line 140
+  // Helper function to convert smoothing settings to window size
+  const getWindowSizeFromSettings = (style: string, level: number): number => {
+    // Special case to match the original fixed behavior
+    if (style === 'medium' && level === 25) {
+      return 25; // Ensure we get exactly 25 for the default medium/25 setting
+    }
+    
+    // Map 0-100 level to appropriate window size based on style
+    switch (style) {
+      case 'detailed':
+        // Detailed: smaller window sizes (3-15)
+        return Math.round(3 + (level / 100) * 12);
+      case 'natural':
+        // Natural: medium window sizes (5-25)
+        return Math.round(5 + (level / 100) * 20);
+      case 'simplified':
+        // Simplified: larger window sizes (15-50)
+        return Math.round(15 + (level / 100) * 35);
+      case 'medium':
+      default:
+        // Medium: balanced window sizes (10-35)
+        return Math.round(10 + (level / 100) * 25);
+    }
+  };
+
+  // Add after the localStorage saving effects (around line 1927)
+  // Add effects to reprocess data when smoothing settings change
+  useEffect(() => {
+    // Only reprocess if we have data to work with
+    if (nativePitchData.times.length > 0 && pitchManager.current) {
+      console.log('[App] Smoothing settings changed, reprocessing native pitch data');
+      
+      try {
+        // Get the raw data from the pitch manager
+        const timeRange = {
+          min: nativeChartInstance?.scales?.x?.min || 0,
+          max: nativeChartInstance?.scales?.x?.max || 30
+        };
+        
+        const initialData = pitchManager.current.getPitchDataForTimeRange(timeRange.min, timeRange.max);
+        
+        // Apply smoothing with the new settings
+        const smoothingWindowSize = separateSmoothingSettings ? 
+          getWindowSizeFromSettings(smoothingStyle, nativeSmoothingLevel) : 
+          getWindowSizeFromSettings(smoothingStyle, smoothingLevel);
+        
+        const enhancedData = {
+          times: initialData.times,
+          pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
+        };
+        
+        console.log('[App] Native pitch data reprocessed with window size:', smoothingWindowSize);
+        setNativePitchData(enhancedData);
+      } catch (error) {
+        console.error('Error reprocessing native pitch data:', error);
+      }
+    }
+  }, [smoothingStyle, smoothingLevel, separateSmoothingSettings, nativeSmoothingLevel, nativeChartInstance]);
+
+  // Add effect to reprocess user recording data
+  useEffect(() => {
+    // Only reprocess if we have user recording data
+    if (userPitchData.times.length > 0 && audioBlob) {
+      console.log('[App] Smoothing settings changed, reprocessing user pitch data');
+      
+      // We need to re-extract from the audio blob to apply new smoothing
+      const extract = async () => {
+        try {
+          const arrayBuffer = await audioBlob.arrayBuffer();
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)() as AudioContextType;
+          const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+          const channelData = audioBuffer.getChannelData(0);
+          const sampleRate = audioBuffer.sampleRate;
+          const frameSize = 2048;
+          const hopSize = 256;
+          const detector = PitchDetector.forFloat32Array(frameSize);
+          const pitches: (number | null)[] = [];
+          const times: number[] = [];
+          
+          for (let i = 0; i + frameSize < channelData.length; i += hopSize) {
+            const frame = channelData.slice(i, i + frameSize);
+            const [pitch, clarity] = detector.findPitch(frame, sampleRate);
+            if (pitch >= MIN_PITCH && pitch <= MAX_PITCH && clarity >= MIN_CLARITY) {
+              pitches.push(pitch);
+            } else {
+              pitches.push(null);
+            }
+            times.push(i / sampleRate);
+          }
+          
+          // Apply basic median filter
+          const basicSmoothed = medianFilter(pitches, MEDIAN_FILTER_SIZE);
+          
+          // Apply enhanced smoothing with new settings
+          const smoothingWindowSize = separateSmoothingSettings ?
+            getWindowSizeFromSettings(smoothingStyle, userSmoothingLevel) :
+            getWindowSizeFromSettings(smoothingStyle, smoothingLevel);
+          
+          const enhancedSmooth = smoothPitch(basicSmoothed, smoothingWindowSize);
+          
+          console.log('[App] User recording reprocessed with window size:', smoothingWindowSize);
+          
+          setUserPitchData({ times, pitches: enhancedSmooth });
+        } catch (error) {
+          console.error('Error reprocessing user pitch data:', error);
+        }
+      };
+      
+      extract();
+    }
+  }, [smoothingStyle, smoothingLevel, separateSmoothingSettings, userSmoothingLevel, audioBlob]);
+
   return (
     <div 
       className="app-container"
@@ -2502,8 +2686,197 @@ const App: React.FC = () => {
                       Choose the amount of smoothing applied to pitch curves
                     </div>
                   </label>
-                  <div className="setting-placeholder">
-                    <i>Smoothing method options will be implemented here</i>
+                  <div className="setting-controls">
+                    {/* Visualization Style */}
+                    <div className="setting-control-row">
+                      <label>Visualization Style:</label>
+                      <select 
+                        value={smoothingStyle} 
+                        onChange={(e) => setSmoothingStyle(e.target.value)}
+                        className="settings-select"
+                      >
+                        <option value="detailed">Detailed</option>
+                        <option value="natural">Natural</option>
+                        <option value="medium">Medium</option>
+                        <option value="simplified">Simplified</option>
+                      </select>
+                    </div>
+                    
+                    <div className="setting-help">
+                      <ul className="settings-help-text">
+                        <li><strong>Detailed:</strong> Shows nuanced pitch changes</li>
+                        <li><strong>Natural:</strong> Balanced smoothing</li>
+                        <li><strong>Medium:</strong> Standard smoothing</li>
+                        <li><strong>Simplified:</strong> Shows major contour only</li>
+                      </ul>
+                    </div>
+                    
+                    {/* Separate settings toggle */}
+                    <div className="setting-control-row">
+                      <label className="checkbox-label">
+                        <input 
+                          type="checkbox" 
+                          checked={separateSmoothingSettings} 
+                          onChange={(e) => setSeparateSmoothingSettings(e.target.checked)} 
+                        />
+                        <span>Use separate smoothing for native and user recordings</span>
+                      </label>
+                    </div>
+                    
+                    {!separateSmoothingSettings ? (
+                      /* Global Smoothing Level */
+                      <div className="setting-control-slider">
+                        <label>Smoothing Intensity:</label>
+                        <div className="slider-with-value">
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max="100" 
+                            value={smoothingLevel} 
+                            onChange={(e) => setSmoothingLevel(Number(e.target.value))} 
+                            className="settings-slider" 
+                          />
+                          <div className="slider-value">{smoothingLevel}%</div>
+                        </div>
+                        <div className="preset-buttons">
+                          <button 
+                            className={smoothingLevel === 5 ? 'active' : ''} 
+                            onClick={() => setSmoothingLevel(5)}
+                          >
+                            None
+                          </button>
+                          <button 
+                            className={smoothingLevel === 15 ? 'active' : ''} 
+                            onClick={() => setSmoothingLevel(15)}
+                          >
+                            Light
+                          </button>
+                          <button 
+                            className={smoothingLevel === 25 ? 'active' : ''} 
+                            onClick={() => setSmoothingLevel(25)}
+                          >
+                            Medium
+                          </button>
+                          <button 
+                            className={smoothingLevel === 40 ? 'active' : ''} 
+                            onClick={() => setSmoothingLevel(40)}
+                          >
+                            Heavy
+                          </button>
+                        </div>
+                        <div className="setting-tech-info">
+                          Window size: {getWindowSizeFromSettings(smoothingStyle, smoothingLevel)}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Separate Native and User Smoothing Controls */
+                      <>
+                        <div className="setting-control-slider">
+                          <label>Native Recording Smoothing:</label>
+                          <div className="slider-with-value">
+                            <input 
+                              type="range" 
+                              min="0" 
+                              max="100" 
+                              value={nativeSmoothingLevel} 
+                              onChange={(e) => setNativeSmoothingLevel(Number(e.target.value))} 
+                              className="settings-slider" 
+                            />
+                            <div className="slider-value">{nativeSmoothingLevel}%</div>
+                          </div>
+                          <div className="preset-buttons">
+                            <button
+                              className={nativeSmoothingLevel === 5 ? 'active' : ''}
+                              onClick={() => setNativeSmoothingLevel(5)}
+                            >
+                              None
+                            </button>
+                            <button
+                              className={nativeSmoothingLevel === 15 ? 'active' : ''}
+                              onClick={() => setNativeSmoothingLevel(15)}
+                            >
+                              Light
+                            </button>
+                            <button
+                              className={nativeSmoothingLevel === 25 ? 'active' : ''}
+                              onClick={() => setNativeSmoothingLevel(25)}
+                            >
+                              Medium
+                            </button>
+                            <button
+                              className={nativeSmoothingLevel === 40 ? 'active' : ''}
+                              onClick={() => setNativeSmoothingLevel(40)}
+                            >
+                              Heavy
+                            </button>
+                          </div>
+                          <div className="setting-tech-info">
+                            Window size: {getWindowSizeFromSettings(smoothingStyle, nativeSmoothingLevel)}
+                          </div>
+                        </div>
+                        
+                        <div className="setting-control-slider">
+                          <label>User Recording Smoothing:</label>
+                          <div className="slider-with-value">
+                            <input 
+                              type="range" 
+                              min="0" 
+                              max="100" 
+                              value={userSmoothingLevel} 
+                              onChange={(e) => setUserSmoothingLevel(Number(e.target.value))} 
+                              className="settings-slider" 
+                            />
+                            <div className="slider-value">{userSmoothingLevel}%</div>
+                          </div>
+                          <div className="preset-buttons">
+                            <button
+                              className={userSmoothingLevel === 5 ? 'active' : ''}
+                              onClick={() => setUserSmoothingLevel(5)}
+                            >
+                              None
+                            </button>
+                            <button
+                              className={userSmoothingLevel === 15 ? 'active' : ''}
+                              onClick={() => setUserSmoothingLevel(15)}
+                            >
+                              Light
+                            </button>
+                            <button
+                              className={userSmoothingLevel === 25 ? 'active' : ''}
+                              onClick={() => setUserSmoothingLevel(25)}
+                            >
+                              Medium
+                            </button>
+                            <button
+                              className={userSmoothingLevel === 40 ? 'active' : ''}
+                              onClick={() => setUserSmoothingLevel(40)}
+                            >
+                              Heavy
+                            </button>
+                          </div>
+                          <div className="setting-tech-info">
+                            Window size: {getWindowSizeFromSettings(smoothingStyle, userSmoothingLevel)}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    
+                    {/* Reset button */}
+                    <div className="setting-control-row">
+                      <button 
+                        className="settings-reset-button" 
+                        onClick={() => {
+                          // Reset to original fixed window size of 25 (how curves look now)
+                          setSmoothingStyle('medium');
+                          setSmoothingLevel(25);
+                          setNativeSmoothingLevel(25);
+                          setUserSmoothingLevel(25); // Also set user level to 25 to match current behavior
+                          setSeparateSmoothingSettings(false);
+                        }}
+                      >
+                        Reset to Defaults
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -3216,6 +3589,210 @@ const App: React.FC = () => {
             width: 32px; /* Larger touch target */
             height: 32px; /* Larger touch target */
             font-size: 1.3rem;
+          }
+        }
+      `}</style>
+      {/* Add styles for the smoothing controls before the last style closing tag */}
+      <style>{`
+        /* Smoothing Controls Styles */
+        .setting-control-row {
+          margin-bottom: 12px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .setting-control-slider {
+          margin-bottom: 20px;
+        }
+
+        .settings-select {
+          padding: 6px 8px;
+          border-radius: 4px;
+          border: 1px solid #ccc;
+          min-width: 120px;
+          background-color: white;
+        }
+
+        .settings-help-text {
+          font-size: 0.85rem;
+          color: #666;
+          padding-left: 1.5rem;
+          margin: 8px 0 16px;
+        }
+
+        .slider-with-value {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 8px 0;
+        }
+
+        .settings-slider {
+          flex-grow: 1;
+          -webkit-appearance: none;
+          appearance: none;
+          height: 6px;
+          background: #e0e0e0;
+          border-radius: 3px;
+          outline: none;
+        }
+
+        .settings-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: #1976d2;
+          cursor: pointer;
+        }
+
+        .settings-slider::-moz-range-thumb {
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          background: #1976d2;
+          cursor: pointer;
+        }
+
+        .slider-value {
+          min-width: 45px;
+          font-weight: 500;
+          color: #333;
+        }
+
+        .preset-buttons {
+          display: flex;
+          gap: 8px;
+          margin: 8px 0;
+        }
+
+        .preset-buttons button {
+          padding: 4px 8px;
+          background: #f2f2f2;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.85rem;
+        }
+
+        .preset-buttons button:hover {
+          background: #e8e8e8;
+        }
+
+        .preset-buttons button.active {
+          background: #1976d2;
+          color: white;
+          border-color: #1976d2;
+        }
+
+        .setting-tech-info {
+          font-size: 0.8rem;
+          color: #666;
+          margin-top: 4px;
+        }
+
+        .checkbox-label {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+        }
+
+        .settings-reset-button {
+          padding: 6px 12px;
+          background: #f5f5f5;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.9rem;
+          margin-top: 8px;
+        }
+
+        .settings-reset-button:hover {
+          background: #e8e8e8;
+        }
+
+        /* Mobile styling for the smoothing controls */
+        @media (max-width: 768px) {
+          .setting-control-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+          }
+          
+          .settings-select {
+            width: 100%;
+            background-color: #333;
+            color: #fff;
+            border-color: #555;
+            font-size: 16px !important;
+          }
+          
+          .settings-slider {
+            background: #555;
+            height: 10px;
+          }
+          
+          .settings-slider::-webkit-slider-thumb {
+            width: 24px;
+            height: 24px;
+            background: #6bb5ff;
+          }
+          
+          .settings-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: #6bb5ff;
+          }
+          
+          .slider-value {
+            color: #fff;
+            min-width: 55px;
+            font-size: 16px !important;
+          }
+          
+          .preset-buttons {
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+          }
+          
+          .preset-buttons button {
+            flex: 1;
+            min-width: 70px;
+            background-color: #444;
+            color: #fff;
+            border-color: #555;
+            font-size: 14px !important;
+            padding: 8px !important;
+          }
+          
+          .preset-buttons button.active {
+            background: #1976d2;
+            color: white;
+            border-color: #1976d2;
+          }
+          
+          .setting-tech-info {
+            color: #bbb;
+          }
+          
+          .checkbox-label span {
+            color: #fff;
+          }
+          
+          .settings-reset-button {
+            width: 100%;
+            background-color: #444;
+            color: #fff;
+            border-color: #555;
+            padding: 10px !important;
+          }
+          
+          .settings-help-text {
+            color: #ccc;
           }
         }
       `}</style>
