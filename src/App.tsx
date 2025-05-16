@@ -1868,6 +1868,12 @@ const App: React.FC = () => {
     return /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
   };
 
+  // Add this function to the component, around line 157 after all the declarations
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Select all text when input is focused
+    e.target.select();
+  };
+
   return (
     <div 
       className="app-container"
@@ -2390,14 +2396,28 @@ const App: React.FC = () => {
                           type="number" 
                           value={nativeMaxPitch}
                           onChange={(e) => {
+                            // Allow any value during editing
                             const newValue = Number(e.target.value);
-                            if (!isNaN(newValue) && newValue <= 1000 && newValue > nativeMinPitch + 50) {
+                            if (!isNaN(newValue)) {
                               setNativeMaxPitch(newValue);
                             }
                           }}
-                          min={nativeMinPitch + 50}
+                          onBlur={(e) => {
+                            // Apply validation constraints only when the field loses focus
+                            const newValue = Number(e.target.value);
+                            if (isNaN(newValue) || newValue <= nativeMinPitch + 20 || newValue > 1000) {
+                              // If invalid, reset to previous valid value or default
+                              setNativeMaxPitch(Math.max(nativeMinPitch + 50, DEFAULT_MAX_PITCH));
+                            }
+                          }}
+                          onFocus={handleInputFocus}
+                          onTouchStart={(e) => {
+                            e.currentTarget.focus();
+                          }}
+                          min={0}
                           max={1000}
                           step={10}
+                          inputMode="numeric"
                         />
                       </label>
                       <button 
@@ -2440,14 +2460,28 @@ const App: React.FC = () => {
                           type="number" 
                           value={userMaxPitch}
                           onChange={(e) => {
+                            // Allow any value during editing
                             const newValue = Number(e.target.value);
-                            if (!isNaN(newValue) && newValue <= 1000 && newValue > userMinPitch + 50) {
+                            if (!isNaN(newValue)) {
                               setUserMaxPitch(newValue);
                             }
                           }}
-                          min={userMinPitch + 50}
+                          onBlur={(e) => {
+                            // Apply validation constraints only when the field loses focus
+                            const newValue = Number(e.target.value);
+                            if (isNaN(newValue) || newValue <= userMinPitch + 20 || newValue > 1000) {
+                              // If invalid, reset to previous valid value or default
+                              setUserMaxPitch(Math.max(userMinPitch + 50, DEFAULT_MAX_PITCH));
+                            }
+                          }}
+                          onFocus={handleInputFocus}
+                          onTouchStart={(e) => {
+                            e.currentTarget.focus();
+                          }}
+                          min={0}
                           max={1000}
                           step={10}
+                          inputMode="numeric"
                         />
                       </label>
                       <button 
@@ -3132,6 +3166,8 @@ const App: React.FC = () => {
         @media (max-width: 768px) {
           .range-input-group {
             flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
           }
           
           .range-preview {
@@ -3156,6 +3192,19 @@ const App: React.FC = () => {
             background-color: #333;
             color: #fff;
             border-color: #555;
+            width: 85px; /* Increased from 70px for better touch targets */
+            height: 40px; /* Taller for easier touch */
+            font-size: 16px !important; /* Larger font for mobile */
+            -webkit-appearance: none; /* Fix for iOS input styling */
+            appearance: none;
+            padding: 8px !important; /* More padding for better touch targets */
+          }
+          
+          .range-input-group label {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 1rem !important;
           }
           
           .range-preview-max, .range-preview-min {
@@ -3164,6 +3213,9 @@ const App: React.FC = () => {
           
           .reset-button {
             color: #6bb5ff;
+            width: 32px; /* Larger touch target */
+            height: 32px; /* Larger touch target */
+            font-size: 1.3rem;
           }
         }
       `}</style>
