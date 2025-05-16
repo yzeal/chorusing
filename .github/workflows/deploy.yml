@@ -25,6 +25,11 @@ jobs:
           npm run build
         env:
           VITE_BASE_PATH: "/chorusing/"
+      
+      # Create .nojekyll file to prevent Jekyll processing
+      - name: Create .nojekyll file
+        run: touch dist/.nojekyll
+      
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
