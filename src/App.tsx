@@ -2084,7 +2084,7 @@ const App: React.FC = () => {
       console.log('Keyboard shortcut:', e.key);
       
       // Declare variables outside switch to avoid linter errors
-      let media, xMin, xMax, nativeMedia, recordButtons, recordButton;
+      let media, xMin, xMax, nativeMedia, recordButtons, recordButton, stopButton;
       
       switch (e.key.toLowerCase()) {
         case 'n': // Use 'n' instead of spacebar for now
@@ -2120,13 +2120,23 @@ const App: React.FC = () => {
         case 'r':
           // Find and click the Record button
           recordButtons = Array.from(document.querySelectorAll('button'));
+
+          stopButton = recordButtons.find(btn => 
+            btn.textContent?.trim() === 'Stop'
+          );
+
           recordButton = recordButtons.find(btn => 
             btn.textContent?.trim() === 'Record'
           );
           
-          if (recordButton) {
-            console.log('Clicking Record button');
-            recordButton.click();
+          if (stopButton && !stopButton.disabled) {
+            console.log('Clicking Stop button');
+            stopButton.click();
+          } else {
+            if (recordButton) {
+              console.log('Clicking Record button');
+              recordButton.click();
+            }
           }
           break;
           
