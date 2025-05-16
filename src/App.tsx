@@ -8,9 +8,31 @@ import './App.css'
 import { PitchDetector } from 'pitchy'
 import { PitchDataManager } from './services/PitchDataManager'
 
+// Create logging wrapper functions that only log in development mode
+const isProduction = import.meta.env.MODE === 'production';
+
+// Log function that suppresses logs in production - using let instead of const
+let appLog = (message: string, ...args: any[]) => {
+  if (!isProduction) {
+    console.log(message, ...args);
+  }
+};
+
+// Warning function that suppresses warnings in production
+const appWarn = (message: string, ...args: any[]) => {
+  if (!isProduction) {
+    console.warn(message, ...args);
+  }
+};
+
+// Error logs will show even in production
+const appError = (message: string, ...args: any[]) => {
+  console.error(message, ...args);
+};
+
 // Initialize mobile debug console if needed
 if (typeof window !== 'undefined' && window.location.search.includes('debug=true')) {
-  console.log('Initializing mobile debug console with Eruda');
+  appLog('Initializing mobile debug console with Eruda');
   
   // Add Eruda script
   const script = document.createElement('script');
@@ -32,7 +54,7 @@ if (typeof window !== 'undefined' && window.location.search.includes('debug=true
     
     
     // Add an initialization message to confirm it's working
-    console.log('Mobile debug console ready!', {
+    appLog('Mobile debug console ready!', {
       userAgent: navigator.userAgent,
       screenSize: `${window.innerWidth}x${window.innerHeight}`,
       time: new Date().toISOString()
@@ -47,16 +69,16 @@ if (typeof window !== 'undefined' && window.location.search.includes('debug=true
             // Use alert to show message until we can download logs
             alert('To see all console logs, take a screenshot of the console tab in Eruda.');
           } catch (err) {
-            console.error('Error in export:', err);
+            appError('Error in export:', err);
             alert('Export failed: ' + String(err));
           }
         };
         
         // Add instructions to console
-        console.log('To see more detailed instructions, run:');
-        console.log('window.exportLogs()');
+        appLog('To see more detailed instructions, run:');
+        appLog('window.exportLogs()');
       } catch (err) {
-        console.error('Error setting up log function:', err);
+        appError('Error setting up log function:', err);
       }
     };
     
@@ -64,9 +86,9 @@ if (typeof window !== 'undefined' && window.location.search.includes('debug=true
     setTimeout(addExportButton, 1000);
   };
 
-  // Enhance console.log to show timestamp
-  const originalConsoleLog = console.log;
-  console.log = function(...args) {
+  // Enhance appLog to show timestamp
+  const originalConsoleLog = appLog;
+  appLog = function(...args) {
     const time = new Date().toISOString().split('T')[1].split('.')[0]; // HH:MM:SS
     originalConsoleLog.apply(console, [`[${time}]`, ...args]);
   };
@@ -247,7 +269,7 @@ const App: React.FC = () => {
       try {
         return JSON.parse(savedSettings);
       } catch (e) {
-        console.error('Error parsing saved pitch detection settings:', e);
+        appError('Error parsing saved pitch detection settings:', e);
       }
     }
     // Default settings - these match the constants at the top of the file
@@ -337,7 +359,7 @@ const App: React.FC = () => {
   React.useEffect(() => {
     if (userChartInstance && isUserRecording && userPitchData.times.length > 0) {
       const duration = userPitchData.times[userPitchData.times.length - 1];
-      console.log('[App] Directly setting user recording view range:', { min: 0, max: duration });
+      appLog('[App] Directly setting user recording view range:', { min: 0, max: duration });
       
       if (userChartInstance.setViewRange) {
         userChartInstance.setViewRange({ min: 0, max: duration });
@@ -378,11 +400,11 @@ const App: React.FC = () => {
 
     // Set flag to indicate we're loading a completely new file
     isLoadingNewFileRef.current = true;
-    console.log('[App] Loading new file via drop, setting isLoadingNewFile flag:', isLoadingNewFileRef.current);
+    appLog('[App] Loading new file via drop, setting isLoadingNewFile flag:', isLoadingNewFileRef.current);
 
     // Reset user-set loop region when loading a new file
     userSetLoopRef.current = null;
-    console.log('[App] New file loaded, clearing user-set loop region');
+    appLog('[App] New file loaded, clearing user-set loop region');
 
     // Use the existing file handling logic
     const url = URL.createObjectURL(file);
@@ -391,7 +413,7 @@ const App: React.FC = () => {
     if (file.type.startsWith('audio/')) {
       setNativeMediaType('audio');
       try {
-        console.log('[App] Initializing PitchDataManager with audio file:', file.name);
+        appLog('[App] Initializing PitchDataManager with audio file:', file.name);
         await pitchManager.current.initialize(file);
         
         // Get initial pitch data
@@ -407,16 +429,16 @@ const App: React.FC = () => {
           pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
         };
         
-        console.log('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
+        appLog('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
         setNativePitchData(enhancedData);
       } catch (error) {
-        console.error('Error processing audio:', error);
+        appError('Error processing audio:', error);
         setNativePitchData({ times: [], pitches: [] });
       }
     } else if (file.type.startsWith('video/')) {
       setNativeMediaType('video');
       try {
-        console.log('[App] Initializing PitchDataManager with video file:', file.name);
+        appLog('[App] Initializing PitchDataManager with video file:', file.name);
         await pitchManager.current.initialize(file);
         
         // Get initial pitch data
@@ -432,10 +454,10 @@ const App: React.FC = () => {
           pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
         };
         
-        console.log('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
+        appLog('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
         setNativePitchData(enhancedData);
       } catch (error) {
-        console.error('Error processing video:', error);
+        appError('Error processing video:', error);
         setNativePitchData({ times: [], pitches: [] });
       }
     } else {
@@ -444,7 +466,7 @@ const App: React.FC = () => {
     }
     
     // Don't reset the flag here - it will be reset by a useEffect
-    console.log('[App] File loading complete, isLoadingNewFile still set:', isLoadingNewFileRef.current);
+    appLog('[App] File loading complete, isLoadingNewFile still set:', isLoadingNewFileRef.current);
   };
 
   // Extract pitch from user recording when audioBlob changes
@@ -491,7 +513,7 @@ const App: React.FC = () => {
         
         const enhancedSmooth = smoothPitch(basicSmoothed, smoothingWindowSize);
         
-        console.log('[App] User recording processed with pitch settings:', { minPitch, maxPitch, clarityThreshold });
+        appLog('[App] User recording processed with pitch settings:', { minPitch, maxPitch, clarityThreshold });
         
         setUserPitchData({ times, pitches: enhancedSmooth });
         
@@ -508,14 +530,14 @@ const App: React.FC = () => {
         
         // Only update if the range has changed
         if (newYFit[0] !== currentYFit[0] || newYFit[1] !== currentYFit[1]) {
-          console.log('[App] Adjusting y-axis range to include user pitch data:', {
+          appLog('[App] Adjusting y-axis range to include user pitch data:', {
             current: currentYFit,
             new: newYFit
           });
           setLoopYFit(newYFit);
         }
       } catch (error) {
-        console.error('Error extracting pitch:', error);
+        appError('Error extracting pitch:', error);
         setUserPitchData({ times: [], pitches: [] });
       }
     };
@@ -526,7 +548,7 @@ const App: React.FC = () => {
   React.useEffect(() => {
     // Only run this for user recordings that have data
     if (isUserRecording && userPitchData.times.length > 0) {
-      console.log('[App] User recording data updated, length:', userPitchData.times.length);
+      appLog('[App] User recording data updated, length:', userPitchData.times.length);
     }
   }, [isUserRecording, userPitchData.times.length]);
 
@@ -544,11 +566,11 @@ const App: React.FC = () => {
     
     // Set flag to indicate we're loading a completely new file
     isLoadingNewFileRef.current = true;
-    console.log('[App] Loading new file via input, setting isLoadingNewFile flag:', isLoadingNewFileRef.current);
+    appLog('[App] Loading new file via input, setting isLoadingNewFile flag:', isLoadingNewFileRef.current);
     
     // Reset user-set loop region when loading a new file
     userSetLoopRef.current = null;
-    console.log('[App] New file loaded, clearing user-set loop region');
+    appLog('[App] New file loaded, clearing user-set loop region');
     
     const url = URL.createObjectURL(file);
     setNativeMediaUrl(url);
@@ -556,7 +578,7 @@ const App: React.FC = () => {
     if (file.type.startsWith('audio/')) {
       setNativeMediaType('audio');
       try {
-        console.log('[App] Initializing PitchDataManager with audio file:', file.name);
+        appLog('[App] Initializing PitchDataManager with audio file:', file.name);
         await pitchManager.current.initialize(file);
         
         // Get initial pitch data
@@ -572,16 +594,16 @@ const App: React.FC = () => {
           pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
         };
         
-        console.log('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
+        appLog('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
         setNativePitchData(enhancedData);
       } catch (error) {
-        console.error('Error processing audio:', error);
+        appError('Error processing audio:', error);
         setNativePitchData({ times: [], pitches: [] });
       }
     } else if (file.type.startsWith('video/')) {
       setNativeMediaType('video');
       try {
-        console.log('[App] Initializing PitchDataManager with video file:', file.name);
+        appLog('[App] Initializing PitchDataManager with video file:', file.name);
         await pitchManager.current.initialize(file);
         
         // Get initial pitch data
@@ -597,10 +619,10 @@ const App: React.FC = () => {
           pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
         };
         
-        console.log('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
+        appLog('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
         setNativePitchData(enhancedData);
       } catch (error) {
-        console.error('Error processing video:', error);
+        appError('Error processing video:', error);
         setNativePitchData({ times: [], pitches: [] });
       }
     } else {
@@ -609,7 +631,7 @@ const App: React.FC = () => {
     }
     
     // Don't reset the flag here - it will be reset by a useEffect
-    console.log('[App] File loading complete, isLoadingNewFile still set:', isLoadingNewFileRef.current);
+    appLog('[App] File loading complete, isLoadingNewFile still set:', isLoadingNewFileRef.current);
   };
 
   // Ensure video is seeked to 0.01 and loaded when a new video is loaded (robust for short files)
@@ -629,7 +651,7 @@ const App: React.FC = () => {
   React.useEffect(() => {
     // Only proceed with reset if we're loading a completely new file
     if (!isLoadingNewFileRef.current) {
-      console.log('[App] Pitch data changed, but not loading a new file. Preserving loop region.', {
+      appLog('[App] Pitch data changed, but not loading a new file. Preserving loop region.', {
         isLoadingNewFile: isLoadingNewFileRef.current,
         pitchDataLength: nativePitchData.times.length,
         loopStart,
@@ -643,7 +665,7 @@ const App: React.FC = () => {
       return;
     }
     
-    console.log('[App] Setting loop region for newly loaded file', {
+    appLog('[App] Setting loop region for newly loaded file', {
       isLoadingNewFile: isLoadingNewFileRef.current,
       pitchDataLength: nativePitchData.times.length
     });
@@ -663,14 +685,14 @@ const App: React.FC = () => {
       
       // Set the user-set loop to this region, as if the user created this loop
       userSetLoopRef.current = { start: 0, end: initialViewDuration };
-      console.log('[App] New file loaded (long), setting loop region to first 10 seconds:', {
+      appLog('[App] New file loaded (long), setting loop region to first 10 seconds:', {
         duration,
         loop: userSetLoopRef.current
       });
       
       // Update chart view range if chart is ready
       if (nativeChartInstance) {
-        console.log('[App] Long video detected, setting initial view to first 10 seconds:', {
+        appLog('[App] Long video detected, setting initial view to first 10 seconds:', {
           duration,
           initialViewDuration,
           chartInstance: !!nativeChartInstance
@@ -701,7 +723,7 @@ const App: React.FC = () => {
       
       // Set the user-set loop to this region, as if the user created this loop
       userSetLoopRef.current = { start: 0, end: duration };
-      console.log('[App] New file loaded (short), setting loop region to entire duration:', {
+      appLog('[App] New file loaded (short), setting loop region to entire duration:', {
         duration,
         loop: userSetLoopRef.current
       });
@@ -714,7 +736,7 @@ const App: React.FC = () => {
   React.useEffect(() => {
     // Always run fitYAxisToLoop when loop region changes to update visuals
     if (nativePitchData.times.length > 0) {
-      console.log('[App] Loop region changed, fitting Y axis:', { 
+      appLog('[App] Loop region changed, fitting Y axis:', { 
         loopStart, 
         loopEnd, 
         source: 'loop change effect',
@@ -728,7 +750,7 @@ const App: React.FC = () => {
           (Math.abs(loopStart - userSetLoop.start) > 0.001 || 
            Math.abs(loopEnd - userSetLoop.end) > 0.001)) {
         
-        console.log('[App] Loop region overwritten detected, restoring user values:', {
+        appLog('[App] Loop region overwritten detected, restoring user values:', {
           current: {start: loopStart, end: loopEnd},
           userSet: userSetLoop
         });
@@ -769,7 +791,7 @@ const App: React.FC = () => {
         { start: preservedLoopStart!, end: preservedLoopEnd! } : 
         { start: loopStart, end: loopEnd };
     
-    console.log('[App] View change requested with loop region:', {
+    appLog('[App] View change requested with loop region:', {
       startTime,
       endTime,
       loopRegionToRestore,
@@ -797,7 +819,7 @@ const App: React.FC = () => {
         setLoopEndWithLogging(currentLoopEnd);
       }
     } else {
-      console.log('[App] Skipping loop region preservation in handleViewChange - loading new file');
+      appLog('[App] Skipping loop region preservation in handleViewChange - loading new file');
     }
 
     // Set loading state
@@ -814,7 +836,7 @@ const App: React.FC = () => {
           // Only consider it an initial load if we haven't done setup and have no data
           const isInitialLoad = !initialSetupDoneRef.current && nativePitchData.times.length === 0;
           
-          console.log('[App] View change triggered:', { 
+          appLog('[App] View change triggered:', { 
             startTime, 
             endTime,
             isInitialLoad,
@@ -830,7 +852,7 @@ const App: React.FC = () => {
           
           // For initial load of long videos, force loading only first segment
           if (isInitialLoad && isLongVideo) {
-            console.log('[App] Initial load of long video, forcing first segment only');
+            appLog('[App] Initial load of long video, forcing first segment only');
             await pitchManager.current.loadSegmentsForTimeRange(0, 10);
             const visibleData = pitchManager.current.getPitchDataForTimeRange(0, 10);
             
@@ -866,7 +888,7 @@ const App: React.FC = () => {
               // First check for userSetLoop, which takes highest priority
               if (userSetLoop) {
                 if (loopStart !== userSetLoop.start || loopEnd !== userSetLoop.end) {
-                  console.log('[App] Re-applying user-set loop region after data loading:', {
+                  appLog('[App] Re-applying user-set loop region after data loading:', {
                     current: { start: loopStart, end: loopEnd },
                     userSet: userSetLoop
                   });
@@ -877,7 +899,7 @@ const App: React.FC = () => {
               // Then check for preserved values
               else if (Math.abs(loopStart - loopRegionToRestore.start) > 0.001 || 
                       Math.abs(loopEnd - loopRegionToRestore.end) > 0.001) {
-                console.log('[App] Re-applying preserved loop region after data loading:', {
+                appLog('[App] Re-applying preserved loop region after data loading:', {
                   current: { start: loopStart, end: loopEnd },
                   preserved: loopRegionToRestore
                 });
@@ -885,14 +907,14 @@ const App: React.FC = () => {
                 setLoopEndWithLogging(loopRegionToRestore.end);
               }
             } else if (isJumpingToPlaybackRef.current) {
-              console.log('[App] Skipping loop region restoration - jump to playback in progress');
+              appLog('[App] Skipping loop region restoration - jump to playback in progress');
             } else {
-              console.log('[App] Skipping loop region restoration - loading new file');
+              appLog('[App] Skipping loop region restoration - loading new file');
             }
           }
         }
       } catch (error) {
-        console.error('Error loading pitch data for time range:', error);
+        appError('Error loading pitch data for time range:', error);
       } finally {
         // Clear loading state
         setIsLoadingPitchData(false);
@@ -904,7 +926,7 @@ const App: React.FC = () => {
   React.useEffect(() => {
     // Skip this logic completely if we're in the middle of a jump-to-playback operation
     if (isJumpingToPlaybackRef.current) {
-      console.log('[App] Skipping initial view setup while jump-to-playback is in progress');
+      appLog('[App] Skipping initial view setup while jump-to-playback is in progress');
       return;
     }
 
@@ -913,7 +935,7 @@ const App: React.FC = () => {
       
       if (duration > 30) {
         const initialViewDuration = 10;
-        console.log('[App] Setting initial view range for long video:', {
+        appLog('[App] Setting initial view range for long video:', {
           duration,
           initialViewDuration,
           isInitialSetup: !initialSetupDoneRef.current,
@@ -949,7 +971,7 @@ const App: React.FC = () => {
 
   // Modify onLoopChange to store the user-set values in the ref
   const onLoopChangeHandler = (start: number, end: number) => {
-    console.log('[App] Loop region changed by user interaction:', { start, end });
+    appLog('[App] Loop region changed by user interaction:', { start, end });
     
     // Store these values as the last valid user-set values
     userSetLoopRef.current = { start, end };
@@ -995,7 +1017,7 @@ const App: React.FC = () => {
       }
     }
     
-    console.log('[App] Calculated initial pitch range:', {
+    appLog('[App] Calculated initial pitch range:', {
       minPitch,
       maxPitch,
       dataMin: Math.min(...validPitches),
@@ -1013,7 +1035,7 @@ const App: React.FC = () => {
     
     // Only calculate the y-axis range once when loading a new file
     if (isLoadingNewFileRef.current) {
-      console.log('[App] Setting initial y-axis range for new file');
+      appLog('[App] Setting initial y-axis range for new file');
       
       // Calculate the initial range based on the pitch data
       const [minPitch, maxPitch] = calculateInitialPitchRange(nativePitchData.pitches);
@@ -1036,7 +1058,7 @@ const App: React.FC = () => {
     if (userSetLoop && 
         (Math.abs(currentLoopStart - userSetLoop.start) > 0.001 || 
          Math.abs(currentLoopEnd - userSetLoop.end) > 0.001)) {
-      console.log('[App] Loop region mismatch detected, restoring user-set values:', {
+      appLog('[App] Loop region mismatch detected, restoring user-set values:', {
         current: { start: currentLoopStart, end: currentLoopEnd },
         userSet: userSetLoop
       });
@@ -1049,14 +1071,14 @@ const App: React.FC = () => {
       return;
     }
 
-    console.log('[App] fitYAxisToLoop called but not changing y-axis range, keeping it consistent');
+    appLog('[App] fitYAxisToLoop called but not changing y-axis range, keeping it consistent');
     // We no longer modify the y-axis range in this function
     // The y-axis range is set once when loading a new file and remains constant
   }
 
   // Update the view change handler
   const onViewChangeHandler = (startTime: number, endTime: number, preservedLoopStart?: number, preservedLoopEnd?: number) => {
-    console.log('[App] View change from PitchGraph:', { 
+    appLog('[App] View change from PitchGraph:', { 
       startTime, 
       endTime, 
       preservedLoopStart, 
@@ -1075,13 +1097,13 @@ const App: React.FC = () => {
         endTime <= 10 && 
         userSetLoopRef.current && 
         userSetLoopRef.current.start > 20) { // Arbitrary threshold to detect unintended resets
-      console.log('[App] Ignoring view reset during jump-to-playback operation');
+      appLog('[App] Ignoring view reset during jump-to-playback operation');
       return;
     }
     
     // If auto-loop is enabled, set the loop region to match the view
     if (autoLoopEnabled) {
-      console.log('[App] Auto-loop enabled, setting loop region to match view:', { start: startTime, end: endTime });
+      appLog('[App] Auto-loop enabled, setting loop region to match view:', { start: startTime, end: endTime });
       // Update userSetLoopRef since this is effectively a user action
       userSetLoopRef.current = { start: startTime, end: endTime };
       setLoopStartWithLogging(startTime);
@@ -1138,7 +1160,7 @@ const App: React.FC = () => {
               (isStuckLongTime && isInLastSection) ||
               (stuckFrameCount > 30 && !media.paused)) {
             
-            console.log('[App] Detected stuck playback:', {
+            appLog('[App] Detected stuck playback:', {
               currentTime,
               lastTimeValue,
               duration: media.duration,
@@ -1151,7 +1173,7 @@ const App: React.FC = () => {
             
             // Manually trigger a loop if we have a loop region set
             if (loopEnd > loopStart) {
-              console.log('[App] Manually triggering loop for stuck media');
+              appLog('[App] Manually triggering loop for stuck media');
               media.pause();
               // Use a small timeout to avoid race conditions
               setTimeout(() => {
@@ -1159,10 +1181,10 @@ const App: React.FC = () => {
                   media.currentTime = loopStart;
                   try {
                     media.play().catch(err => {
-                      console.log('[App] Error playing after manual loop:', err);
+                      appLog('[App] Error playing after manual loop:', err);
                     });
                   } catch (e) {
-                    console.log('[App] Error during manual loop play:', e);
+                    appLog('[App] Error during manual loop play:', e);
                   }
                 }
               }, loopDelay);
@@ -1233,7 +1255,7 @@ const App: React.FC = () => {
     
     // Handle both cases where we need to reset playback
     if (shouldApplyLoop && !media.paused && (isAtLoopEnd || isNearFileEnd)) {
-      console.log('[App] Loop trigger detected:', {
+      appLog('[App] Loop trigger detected:', {
         nativePlaybackTime,
         loopStart,
         loopEnd,
@@ -1253,11 +1275,11 @@ const App: React.FC = () => {
         // Double-check media element still exists before manipulating it
         if (!media) return;
         
-        console.log('[App] Resetting playback to loop start:', loopStart);
+        appLog('[App] Resetting playback to loop start:', loopStart);
         
         // Enhanced robust playback for mobile devices
         const isOnMobile = isMobileDevice();
-        console.log('[App] Device type:', isOnMobile ? 'mobile' : 'desktop');
+        appLog('[App] Device type:', isOnMobile ? 'mobile' : 'desktop');
         
         // Different handling for mobile vs desktop
         if (isOnMobile) {
@@ -1273,24 +1295,24 @@ const App: React.FC = () => {
             
             // Set up a one-time canplaythrough handler
             media.oncanplaythrough = () => {
-              console.log('[App] Media canplaythrough event fired, attempting playback');
+              appLog('[App] Media canplaythrough event fired, attempting playback');
               media.oncanplaythrough = existingHandler; // Restore original handler
               
               try {
                 const playPromise = media.play();
                 if (playPromise !== undefined) {
                   playPromise.catch(error => {
-                    console.log('[App] Playback error:', error);
+                    appLog('[App] Playback error:', error);
                     if (retriesLeft > 0) {
-                      console.log(`[App] Retrying playback, ${retriesLeft} attempts left`);
+                      appLog(`[App] Retrying playback, ${retriesLeft} attempts left`);
                       setTimeout(() => playWithRetries(retriesLeft - 1), 300);
                     }
                   });
                 }
               } catch (e) {
-                console.log('[App] Play error:', e);
+                appLog('[App] Play error:', e);
                 if (retriesLeft > 0) {
-                  console.log(`[App] Retrying after error, ${retriesLeft} attempts left`);
+                  appLog(`[App] Retrying after error, ${retriesLeft} attempts left`);
                   setTimeout(() => playWithRetries(retriesLeft - 1), 300);
                 }
               }
@@ -1299,18 +1321,18 @@ const App: React.FC = () => {
             // Set a safety timeout in case canplaythrough doesn't fire
             setTimeout(() => {
               if (media.paused && retriesLeft > 0) {
-                console.log('[App] canplaythrough timeout, forcing play attempt');
+                appLog('[App] canplaythrough timeout, forcing play attempt');
                 media.oncanplaythrough = existingHandler; // Restore original handler
                 
                 try {
                   media.play().catch(error => {
-                    console.log('[App] Forced play error:', error);
+                    appLog('[App] Forced play error:', error);
                     if (retriesLeft > 0) {
                       setTimeout(() => playWithRetries(retriesLeft - 1), 300);
                     }
                   });
                 } catch (e) {
-                  console.log('[App] Forced play error:', e);
+                  appLog('[App] Forced play error:', e);
                   if (retriesLeft > 0) {
                     setTimeout(() => playWithRetries(retriesLeft - 1), 300);
                   }
@@ -1331,13 +1353,13 @@ const App: React.FC = () => {
               const playPromise = media.play();
               if (playPromise !== undefined) {
                 playPromise.catch(error => {
-                  console.log('[App] Autoplay prevented by browser:', error);
+                  appLog('[App] Autoplay prevented by browser:', error);
                   // The play request was interrupted by browser policy
                   // Show a play button or notify the user
                 });
               }
             } catch (e) {
-              console.log('[App] Error during play attempt:', e);
+              appLog('[App] Error during play attempt:', e);
               // If play fails, try again after a short delay
               setTimeout(playWithRetry, 100);
             }
@@ -1369,7 +1391,7 @@ const App: React.FC = () => {
     }
     
     const onSeeking = () => {
-      console.log('[App] User is seeking');
+      appLog('[App] User is seeking');
       setIsUserSeeking(true);
       
       // Clear any existing timeout
@@ -1381,7 +1403,7 @@ const App: React.FC = () => {
     const onSeeked = () => {
       // Delay resetting the seeking state to prevent immediate loop activation
       seekingTimeoutRef.current = setTimeout(() => {
-        console.log('[App] User finished seeking');
+        appLog('[App] User finished seeking');
         setIsUserSeeking(false);
       }, 500); // 500ms delay to ensure the user has finished seeking
     };
@@ -1401,7 +1423,7 @@ const App: React.FC = () => {
         (totalDuration - media.currentTime < 0.5 || media.ended);
         
       if (isNearEndOfMedia && isUserSeeking) {
-        console.log('[App] Near end of media, resetting seeking state to restore loop behavior');
+        appLog('[App] Near end of media, resetting seeking state to restore loop behavior');
         setIsUserSeeking(false);
         
         // Clear any existing timeout
@@ -1415,7 +1437,7 @@ const App: React.FC = () => {
       // and the media is not paused, it might be a manual seeking operation
       const timeDifference = Math.abs(media.currentTime - nativePlaybackTime);
       if (timeDifference > 1.0 && !media.paused) {
-        console.log('[App] Detected manual timeline seek:', { 
+        appLog('[App] Detected manual timeline seek:', { 
           currentTime: media.currentTime, 
           lastKnownTime: nativePlaybackTime,
           difference: timeDifference
@@ -1438,7 +1460,7 @@ const App: React.FC = () => {
     
     // Add specific error handling for end of media errors
     const onError = () => {
-      console.log('[App] Media error detected, resetting seeking state:', media.error);
+      appLog('[App] Media error detected, resetting seeking state:', media.error);
       setIsUserSeeking(false);
       
       // Clear any existing timeout
@@ -1449,7 +1471,7 @@ const App: React.FC = () => {
     
     // Enhanced ended event listener to handle "stuck at end" issues
     const onEnded = () => {
-      console.log('[App] Media playback ended, resetting seeking state and looping');
+      appLog('[App] Media playback ended, resetting seeking state and looping');
       setIsUserSeeking(false);
       
       // Clear any existing timeout
@@ -1461,7 +1483,7 @@ const App: React.FC = () => {
       if (loopEnd > loopStart) {
         setTimeout(() => {
           if (media) {
-            console.log('[App] Explicit loop to start after ended event');
+            appLog('[App] Explicit loop to start after ended event');
             media.currentTime = loopStart;
             
             // Attempt to play with error handling
@@ -1469,11 +1491,11 @@ const App: React.FC = () => {
               const playPromise = media.play();
               if (playPromise !== undefined) {
                 playPromise.catch(error => {
-                  console.log('[App] Autoplay prevented by browser after loop:', error);
+                  appLog('[App] Autoplay prevented by browser after loop:', error);
                 });
               }
             } catch (e) {
-              console.log('[App] Error during play attempt after loop:', e);
+              appLog('[App] Error during play attempt after loop:', e);
             }
           }
         }, loopDelay);
@@ -1528,7 +1550,7 @@ const App: React.FC = () => {
   React.useEffect(() => {
     if (!nativePitchData.pitches.length) return;
     
-    console.log('[App] nativePitchData.pitches changed, current loop region:', {
+    appLog('[App] nativePitchData.pitches changed, current loop region:', {
       loopStart,
       loopEnd
     });
@@ -1572,7 +1594,7 @@ const App: React.FC = () => {
 
   React.useEffect(() => {
     if (nativeChartInstance) {
-      console.log('Chart ref is now set:', nativeChartInstance);
+      appLog('Chart ref is now set:', nativeChartInstance);
     }
   }, [nativeChartInstance]);
 
@@ -1632,7 +1654,7 @@ const App: React.FC = () => {
       
       // Only update if we have a valid duration
       if (detectedDuration > 0 && !isNaN(detectedDuration) && isFinite(detectedDuration)) {
-        console.log('[App] Setting media duration from multiple sources:', {
+        appLog('[App] Setting media duration from multiple sources:', {
           pitchManagerDuration: pitchManager.current.getTotalDuration(),
           mediaDuration: media.duration,
           seekableEnd: media.seekable && media.seekable.length > 0 ? media.seekable.end(media.seekable.length - 1) : 'N/A',
@@ -1644,7 +1666,7 @@ const App: React.FC = () => {
         
         // Handle specific behaviors based on duration
         if (detectedDuration <= 30 && isLoadingNewFileRef.current) {
-          console.log('[App] Short video detected, updating loop region to match duration:', detectedDuration);
+          appLog('[App] Short video detected, updating loop region to match duration:', detectedDuration);
           setLoopStartWithLogging(0);
           setLoopEndWithLogging(detectedDuration);
           
@@ -1652,7 +1674,7 @@ const App: React.FC = () => {
           userSetLoopRef.current = { start: 0, end: detectedDuration };
         } else if (detectedDuration > 30 && isLoadingNewFileRef.current) {
           // For long videos, ensure the initial loop is correctly set to the first 10 seconds
-          console.log('[App] Long video detected, setting initial loop to first 10 seconds');
+          appLog('[App] Long video detected, setting initial loop to first 10 seconds');
           const initialViewDuration = 10;
           setLoopStartWithLogging(0);
           setLoopEndWithLogging(initialViewDuration);
@@ -1661,7 +1683,7 @@ const App: React.FC = () => {
           userSetLoopRef.current = { start: 0, end: initialViewDuration };
         }
       } else {
-        console.warn('[App] Invalid duration detected, sources:', {
+        appWarn('[App] Invalid duration detected, sources:', {
           pitchManagerDuration: pitchManager.current.getTotalDuration(), 
           mediaDuration: media.duration,
           detected: detectedDuration
@@ -1713,7 +1735,7 @@ const App: React.FC = () => {
       if (updatedDuration > 0 && !isNaN(updatedDuration) && isFinite(updatedDuration)) {
         // Only update if it's significantly different
         if (Math.abs(updatedDuration - nativeMediaDuration) > 0.1) {
-          console.log('[App] Duration changed significantly:', {
+          appLog('[App] Duration changed significantly:', {
             oldDuration: nativeMediaDuration,
             newDuration: updatedDuration
           });
@@ -1722,7 +1744,7 @@ const App: React.FC = () => {
           // If this is a duration correction event and we're still loading the file
           if (isLoadingNewFileRef.current) {
             if (updatedDuration <= 30) {
-              console.log('[App] Duration updated for short video, correcting loop region:', updatedDuration);
+              appLog('[App] Duration updated for short video, correcting loop region:', updatedDuration);
               setLoopStartWithLogging(0);
               setLoopEndWithLogging(updatedDuration);
               
@@ -1730,7 +1752,7 @@ const App: React.FC = () => {
               userSetLoopRef.current = { start: 0, end: updatedDuration };
             } else {
               // Long video - keep the default 10-second initial view
-              console.log('[App] Duration updated for long video, maintaining initial loop region');
+              appLog('[App] Duration updated for long video, maintaining initial loop region');
             }
           }
         }
@@ -1757,7 +1779,7 @@ const App: React.FC = () => {
 
   // Add wrapped setState functions with logging
   const setLoopStartWithLogging = (value: number) => {
-    console.log('[App] setLoopStart called with:', { 
+    appLog('[App] setLoopStart called with:', { 
       value, 
       previousValue: loopStart,
       stack: new Error().stack?.split('\n').slice(1, 4).join('\n')
@@ -1766,7 +1788,7 @@ const App: React.FC = () => {
   };
   
   const setLoopEndWithLogging = (value: number) => {
-    console.log('[App] setLoopEnd called with:', { 
+    appLog('[App] setLoopEnd called with:', { 
       value, 
       previousValue: loopEnd,
       stack: new Error().stack?.split('\n').slice(1, 4).join('\n') 
@@ -1781,7 +1803,7 @@ const App: React.FC = () => {
       // Wait for the next render cycle to make sure other effects have run
       // This gives the useEffect that sets the loop region time to run
       const timerId = setTimeout(() => {
-        console.log('[App] Resetting isLoadingNewFile flag after data loaded, delay complete');
+        appLog('[App] Resetting isLoadingNewFile flag after data loaded, delay complete');
         isLoadingNewFileRef.current = false;
       }, 100); // Give some time for other effects to process
       
@@ -1808,7 +1830,7 @@ const App: React.FC = () => {
       startTime = Math.max(0, endTime - viewDuration);
     }
     
-    console.log('[App] Jumping to playback position:', {
+    appLog('[App] Jumping to playback position:', {
       currentTime,
       newView: { startTime, endTime },
       autoLoopEnabled
@@ -1823,7 +1845,7 @@ const App: React.FC = () => {
       
       // If auto-loop is enabled, update the loop region immediately
       if (autoLoopEnabled) {
-        console.log('[App] Auto-loop enabled, setting loop region to match view:', { start: startTime, end: endTime });
+        appLog('[App] Auto-loop enabled, setting loop region to match view:', { start: startTime, end: endTime });
         // Update userSetLoopRef since this is effectively a user action
         userSetLoopRef.current = { start: startTime, end: endTime };
         setLoopStartWithLogging(startTime);
@@ -1843,11 +1865,11 @@ const App: React.FC = () => {
         try {
           // Update chart view after data is loaded
           if (nativeChartInstance && nativeChartInstance.setViewRange) {
-            console.log('[App] Updating chart view range to:', { min: startTime, max: endTime });
+            appLog('[App] Updating chart view range to:', { min: startTime, max: endTime });
             nativeChartInstance.setViewRange({ min: startTime, max: endTime });
           } else if (nativeChartInstance && nativeChartInstance.options?.scales?.x) {
             // Fallback if setViewRange not available
-            console.log('[App] Fallback: Updating chart scales directly');
+            appLog('[App] Fallback: Updating chart scales directly');
             nativeChartInstance.options.scales.x.min = startTime;
             nativeChartInstance.options.scales.x.max = endTime;
             nativeChartInstance.update();
@@ -1866,7 +1888,7 @@ const App: React.FC = () => {
                 
                 // If the view got reset, fix it
                 if (Math.abs(currentMin - startTime) > 0.1 || Math.abs(currentMax - endTime) > 0.1) {
-                  console.log('[App] Jump target lost, restoring view to:', { min: startTime, max: endTime });
+                  appLog('[App] Jump target lost, restoring view to:', { min: startTime, max: endTime });
                   
                   if (nativeChartInstance.setViewRange) {
                     nativeChartInstance.setViewRange({ min: startTime, max: endTime });
@@ -1878,7 +1900,7 @@ const App: React.FC = () => {
                   
                   // Also restore the loop region if auto-loop is enabled
                   if (autoLoopEnabled) {
-                    console.log('[App] Restoring loop region after view change reset');
+                    appLog('[App] Restoring loop region after view change reset');
                     // Update userSetLoopRef again
                     userSetLoopRef.current = { start: startTime, end: endTime };
                     setLoopStartWithLogging(startTime);
@@ -1887,20 +1909,20 @@ const App: React.FC = () => {
                 }
               }
             } catch (error) {
-              console.error('[App] Error in view restoration check:', error);
+              appError('[App] Error in view restoration check:', error);
             } finally {
               // Always clear the jump to playback flag
               isJumpingToPlaybackRef.current = false;
             }
           }, 500); // Short delay to check after processing
         } catch (error) {
-          console.error('[App] Error updating chart view:', error);
+          appError('[App] Error updating chart view:', error);
           isJumpingToPlaybackRef.current = false;
           setIsLoadingPitchData(false);
         }
       }, 500); // Delay to allow data loading
     } catch (error) {
-      console.error('[App] Error initiating jump to playback:', error);
+      appError('[App] Error initiating jump to playback:', error);
       // Reset flags
       isJumpingToPlaybackRef.current = false;
       setIsLoadingPitchData(false);
@@ -2019,7 +2041,7 @@ const resetPitchDetectionSettings = useCallback(() => {
   useEffect(() => {
     // Only reprocess if we have data to work with
     if (nativePitchData.times.length > 0 && pitchManager.current) {
-      console.log('[App] Smoothing settings changed, reprocessing native pitch data');
+      appLog('[App] Smoothing settings changed, reprocessing native pitch data');
       
       try {
         // Get the raw data from the pitch manager
@@ -2040,10 +2062,10 @@ const resetPitchDetectionSettings = useCallback(() => {
           pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
         };
         
-        console.log('[App] Native pitch data reprocessed with window size:', smoothingWindowSize);
+        appLog('[App] Native pitch data reprocessed with window size:', smoothingWindowSize);
         setNativePitchData(enhancedData);
       } catch (error) {
-        console.error('Error reprocessing native pitch data:', error);
+        appError('Error reprocessing native pitch data:', error);
       }
     }
   }, [smoothingStyle, smoothingLevel, separateSmoothingSettings, nativeSmoothingLevel, nativeChartInstance]);
@@ -2052,7 +2074,7 @@ const resetPitchDetectionSettings = useCallback(() => {
   useEffect(() => {
     // Only reprocess if we have user recording data
     if (userPitchData.times.length > 0 && audioBlob) {
-      console.log('[App] Settings changed, reprocessing user pitch data');
+      appLog('[App] Settings changed, reprocessing user pitch data');
       
       // We need to re-extract from the audio blob to apply new settings
       const extract = async () => {
@@ -2092,7 +2114,7 @@ const resetPitchDetectionSettings = useCallback(() => {
           
           const enhancedSmooth = smoothPitch(basicSmoothed, smoothingWindowSize);
           
-          console.log('[App] User recording reprocessed with settings:', {
+          appLog('[App] User recording reprocessed with settings:', {
             minPitch,
             maxPitch,
             clarityThreshold,
@@ -2101,7 +2123,7 @@ const resetPitchDetectionSettings = useCallback(() => {
           
           setUserPitchData({ times, pitches: enhancedSmooth });
         } catch (error) {
-          console.error('Error reprocessing user pitch data:', error);
+          appError('Error reprocessing user pitch data:', error);
         }
       };
       
@@ -2139,7 +2161,7 @@ const resetPitchDetectionSettings = useCallback(() => {
         return;
       }
       
-      console.log('Keyboard shortcut:', e.key);
+      appLog('Keyboard shortcut:', e.key);
       
       // Declare variables outside switch to avoid linter errors
       let media, xMin, xMax, nativeMedia, recordButtons, recordButton, stopButton;
@@ -2152,7 +2174,7 @@ const resetPitchDetectionSettings = useCallback(() => {
         media = getActiveMediaElement();
         if (media) {
           if (media.paused) {
-            media.play().catch(err => console.error('Error playing media:', err));
+            media.play().catch(err => appError('Error playing media:', err));
           } else {
             media.pause();
           }
@@ -2164,7 +2186,7 @@ const resetPitchDetectionSettings = useCallback(() => {
         if (nativeChartInstance?.scales?.x) {
           xMin = nativeChartInstance.scales.x.min;
           xMax = nativeChartInstance.scales.x.max;
-          console.log('Setting loop to visible region:', xMin, xMax);
+          appLog('Setting loop to visible region:', xMin, xMax);
           userSetLoopRef.current = { start: xMin, end: xMax };
           setLoopStartWithLogging(xMin);
           setLoopEndWithLogging(xMax);
@@ -2190,11 +2212,11 @@ const resetPitchDetectionSettings = useCallback(() => {
         );
         
         if (stopButton && !stopButton.disabled) {
-          console.log('Clicking Stop button');
+          appLog('Clicking Stop button');
           stopButton.click();
         } else {
           if (recordButton) {
-            console.log('Clicking Record button');
+            appLog('Clicking Record button');
             recordButton.click();
           }
         }
@@ -2204,7 +2226,7 @@ const resetPitchDetectionSettings = useCallback(() => {
       else if (key === keyboardShortcuts.playUser) {
         if (userAudioRef.current) {
           if (userAudioRef.current.paused) {
-            userAudioRef.current.play().catch(err => console.error('Error playing user audio:', err));
+            userAudioRef.current.play().catch(err => appError('Error playing user audio:', err));
           } else {
             userAudioRef.current.pause();
           }
@@ -2220,7 +2242,7 @@ const resetPitchDetectionSettings = useCallback(() => {
     };
     
     window.addEventListener('keydown', handleKeyDown);
-    console.log('Keyboard shortcuts enabled');
+    appLog('Keyboard shortcuts enabled');
     
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
@@ -2234,7 +2256,7 @@ const resetPitchDetectionSettings = useCallback(() => {
       try {
         return JSON.parse(savedShortcuts);
       } catch (e) {
-        console.error('Error parsing saved shortcuts:', e);
+        appError('Error parsing saved shortcuts:', e);
       }
     }
     // Default shortcuts
@@ -2394,7 +2416,7 @@ const resetPitchDetectionSettings = useCallback(() => {
                       const duration = pitchManager.current.getTotalDuration() || 
                         (nativePitchData.times.length > 0 ? nativePitchData.times[nativePitchData.times.length - 1] : 0);
                       userSetLoopRef.current = null;
-                      console.log('[App] Clearing user-set loop region');
+                      appLog('[App] Clearing user-set loop region');
                       setLoopStartWithLogging(0);
                       setLoopEndWithLogging(duration);
                       const media = getActiveMediaElement();
@@ -2426,11 +2448,11 @@ const resetPitchDetectionSettings = useCallback(() => {
                     disabled={!nativeChartInstance}
                     onClick={() => {
                       const chart = nativeChartInstance;
-                      console.log('Loop visible button clicked. Chart ref:', chart);
+                      appLog('Loop visible button clicked. Chart ref:', chart);
                       if (chart && chart.scales && chart.scales.x) {
                         const xMin = chart.scales.x.min;
                         const xMax = chart.scales.x.max;
-                        console.log('Setting loop to visible region:', xMin, xMax);
+                        appLog('Setting loop to visible region:', xMin, xMax);
                         
                         // Update userSetLoopRef since this is a user action
                         userSetLoopRef.current = { start: xMin, end: xMax };
@@ -2442,7 +2464,7 @@ const resetPitchDetectionSettings = useCallback(() => {
                           media.currentTime = xMin;
                         }
                       } else {
-                        console.log('Chart or x scale not available');
+                        appLog('Chart or x scale not available');
                       }
                     }}
                   >
