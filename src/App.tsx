@@ -1111,30 +1111,97 @@ const App: React.FC = () => {
         
         console.log('[App] Resetting playback to loop start:', loopStart);
         
-        // For video elements, ensure we're seeking correctly
-        // First seek to exactly the loop start
-        media.currentTime = loopStart;
+        // Enhanced robust playback for mobile devices
+        const isOnMobile = isMobileDevice();
+        console.log('[App] Device type:', isOnMobile ? 'mobile' : 'desktop');
         
-        // Wait a short time to ensure the seek has completed
-        const playWithRetry = () => {
-          try {
-            const playPromise = media.play();
-            if (playPromise !== undefined) {
-              playPromise.catch(error => {
-                console.log('[App] Autoplay prevented by browser:', error);
-                // The play request was interrupted by browser policy
-                // Show a play button or notify the user
-              });
+        // Different handling for mobile vs desktop
+        if (isOnMobile) {
+          // Mobile-specific implementation with additional safeguards
+          // First, set the currentTime to loop start
+          media.currentTime = loopStart;
+          
+          // Use a robust play mechanism with canplaythrough event and retries
+          const playWithRetries = (retriesLeft = 3) => {
+            // Remove any existing event listeners to avoid duplicates
+            const existingHandler = media.oncanplaythrough;
+            media.oncanplaythrough = null;
+            
+            // Set up a one-time canplaythrough handler
+            media.oncanplaythrough = () => {
+              console.log('[App] Media canplaythrough event fired, attempting playback');
+              media.oncanplaythrough = existingHandler; // Restore original handler
+              
+              try {
+                const playPromise = media.play();
+                if (playPromise !== undefined) {
+                  playPromise.catch(error => {
+                    console.log('[App] Playback error:', error);
+                    if (retriesLeft > 0) {
+                      console.log(`[App] Retrying playback, ${retriesLeft} attempts left`);
+                      setTimeout(() => playWithRetries(retriesLeft - 1), 300);
+                    }
+                  });
+                }
+              } catch (e) {
+                console.log('[App] Play error:', e);
+                if (retriesLeft > 0) {
+                  console.log(`[App] Retrying after error, ${retriesLeft} attempts left`);
+                  setTimeout(() => playWithRetries(retriesLeft - 1), 300);
+                }
+              }
+            };
+            
+            // Set a safety timeout in case canplaythrough doesn't fire
+            setTimeout(() => {
+              if (media.paused && retriesLeft > 0) {
+                console.log('[App] canplaythrough timeout, forcing play attempt');
+                media.oncanplaythrough = existingHandler; // Restore original handler
+                
+                try {
+                  media.play().catch(error => {
+                    console.log('[App] Forced play error:', error);
+                    if (retriesLeft > 0) {
+                      setTimeout(() => playWithRetries(retriesLeft - 1), 300);
+                    }
+                  });
+                } catch (e) {
+                  console.log('[App] Forced play error:', e);
+                  if (retriesLeft > 0) {
+                    setTimeout(() => playWithRetries(retriesLeft - 1), 300);
+                  }
+                }
+              }
+            }, 500);
+          };
+          
+          // Start the robust play sequence after a small delay
+          setTimeout(() => playWithRetries(), 100);
+        } else {
+          // Desktop implementation - simpler and more direct
+          media.currentTime = loopStart;
+          
+          // Wait a short time to ensure the seek has completed
+          const playWithRetry = () => {
+            try {
+              const playPromise = media.play();
+              if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                  console.log('[App] Autoplay prevented by browser:', error);
+                  // The play request was interrupted by browser policy
+                  // Show a play button or notify the user
+                });
+              }
+            } catch (e) {
+              console.log('[App] Error during play attempt:', e);
+              // If play fails, try again after a short delay
+              setTimeout(playWithRetry, 100);
             }
-          } catch (e) {
-            console.log('[App] Error during play attempt:', e);
-            // If play fails, try again after a short delay
-            setTimeout(playWithRetry, 100);
-          }
-        };
-        
-        // Start playback with retry logic
-        playWithRetry();
+          };
+          
+          // Start playback with retry logic
+          playWithRetry();
+        }
       }, loopDelay);
     }
     
@@ -1694,6 +1761,11 @@ const App: React.FC = () => {
       isJumpingToPlaybackRef.current = false;
       setIsLoadingPitchData(false);
     }
+  };
+
+  // Add a utility function to detect mobile devices
+  const isMobileDevice = () => {
+    return /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
   };
 
   return (
