@@ -1,5 +1,5 @@
 // IMPORTANT: Modified by user to test Git detection - delete this line later
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import Footer from './components/Footer'
 import Recorder from './components/Recorder'
 import PitchGraphWithControls from './components/PitchGraph'
@@ -219,7 +219,79 @@ const App: React.FC = () => {
   const [showGuide, setShowGuide] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   
-  // Add keyboard event listener for Escape key
+  // Add settings state for Y-axis range
+  const [nativeMinPitch, setNativeMinPitch] = useState<number>(() => {
+    const savedValue = localStorage.getItem('nativeMinPitch');
+    return savedValue ? Number(savedValue) : DEFAULT_MIN_PITCH;
+  });
+  
+  const [nativeMaxPitch, setNativeMaxPitch] = useState<number>(() => {
+    const savedValue = localStorage.getItem('nativeMaxPitch');
+    return savedValue ? Number(savedValue) : DEFAULT_MAX_PITCH;
+  });
+  
+  const [userMinPitch, setUserMinPitch] = useState<number>(() => {
+    const savedValue = localStorage.getItem('userMinPitch');
+    return savedValue ? Number(savedValue) : DEFAULT_MIN_PITCH;
+  });
+  
+  const [userMaxPitch, setUserMaxPitch] = useState<number>(() => {
+    const savedValue = localStorage.getItem('userMaxPitch');
+    return savedValue ? Number(savedValue) : DEFAULT_MAX_PITCH;
+  });
+  
+  // Save Y-axis range settings to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('nativeMinPitch', nativeMinPitch.toString());
+  }, [nativeMinPitch]);
+  
+  useEffect(() => {
+    localStorage.setItem('nativeMaxPitch', nativeMaxPitch.toString());
+  }, [nativeMaxPitch]);
+  
+  useEffect(() => {
+    localStorage.setItem('userMinPitch', userMinPitch.toString());
+  }, [userMinPitch]);
+  
+  useEffect(() => {
+    localStorage.setItem('userMaxPitch', userMaxPitch.toString());
+  }, [userMaxPitch]);
+  
+  // Function to reset Y-axis range to defaults
+  const resetNativeYAxisRange = () => {
+    setNativeMinPitch(DEFAULT_MIN_PITCH);
+    setNativeMaxPitch(DEFAULT_MAX_PITCH);
+  };
+  
+  const resetUserYAxisRange = () => {
+    setUserMinPitch(DEFAULT_MIN_PITCH);
+    setUserMaxPitch(DEFAULT_MAX_PITCH);
+  };
+  
+  // Get dynamic Y-axis range for native recording
+  const getNativeYAxisRange = useCallback((): [number, number] => {
+    return [nativeMinPitch, nativeMaxPitch];
+  }, [nativeMinPitch, nativeMaxPitch]);
+  
+  // Get dynamic Y-axis range for user recording
+  const getUserYAxisRange = useCallback((): [number, number] => {
+    return [userMinPitch, userMaxPitch];
+  }, [userMinPitch, userMaxPitch]);
+  
+  // Force chart updates when settings change
+  useEffect(() => {
+    if (nativeChartInstance) {
+      nativeChartInstance.update();
+    }
+  }, [nativeMinPitch, nativeMaxPitch, nativeChartInstance]);
+  
+  useEffect(() => {
+    if (userChartInstance) {
+      userChartInstance.update();
+    }
+  }, [userMinPitch, userMaxPitch, userChartInstance]);
+  
+    // Add keyboard event listener for Escape key
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -2030,7 +2102,7 @@ const App: React.FC = () => {
                 color="#388e3c"
                 loopStart={loopStart}
                 loopEnd={loopEnd}
-                yFit={loopYFit}
+                yFit={getNativeYAxisRange()}
                 playbackTime={nativePlaybackTime}
                 onLoopChange={onLoopChangeHandler}
                 onViewChange={onViewChangeHandler}
@@ -2039,8 +2111,8 @@ const App: React.FC = () => {
                 isJumpingToPlayback={isJumpingToPlaybackRef.current}
                 yAxisConfig={{
                   beginAtZero: false,
-                  suggestedMin: loopYFit ? loopYFit[0] : DEFAULT_MIN_PITCH,
-                  suggestedMax: loopYFit ? loopYFit[1] : DEFAULT_MAX_PITCH,
+                  suggestedMin: getNativeYAxisRange()[0],
+                  suggestedMax: getNativeYAxisRange()[1],
                   ticks: {
                     stepSize: 50,
                     precision: 0
@@ -2059,13 +2131,13 @@ const App: React.FC = () => {
               color="#1976d2"
               playbackTime={userPlaybackTime}
               totalDuration={userPitchData.times.length > 0 ? userPitchData.times[userPitchData.times.length - 1] : 0}
-              yFit={loopYFit}
+              yFit={getUserYAxisRange()}
               isUserRecording={isUserRecording}
               onChartReady={setUserChartInstance}
               yAxisConfig={{
                 beginAtZero: false,
-                suggestedMin: loopYFit ? loopYFit[0] : DEFAULT_MIN_PITCH,
-                suggestedMax: loopYFit ? loopYFit[1] : DEFAULT_MAX_PITCH,
+                suggestedMin: getUserYAxisRange()[0],
+                suggestedMax: getUserYAxisRange()[1],
                 ticks: {
                   stepSize: 50,
                   precision: 0
@@ -2291,13 +2363,101 @@ const App: React.FC = () => {
                 <h3>Pitch Display Settings</h3>
                 <div className="setting-group">
                   <label className="setting-label">
-                    <span>Y-Axis Range</span>
+                    <span>Native Recording Y-Axis Range (Hz)</span>
                     <div className="setting-description">
-                      Adjust the minimum and maximum values for the pitch display
+                      Adjust the minimum and maximum pitch values for the native recording display
                     </div>
                   </label>
-                  <div className="setting-placeholder">
-                    <i>Pitch range adjustment will be implemented here</i>
+                  <div className="setting-controls y-axis-range-controls">
+                    <div className="range-input-group">
+                      <label>Min: 
+                        <input 
+                          type="number" 
+                          value={nativeMinPitch}
+                          onChange={(e) => {
+                            const newValue = Number(e.target.value);
+                            if (!isNaN(newValue) && newValue >= 0 && newValue < nativeMaxPitch - 50) {
+                              setNativeMinPitch(newValue);
+                            }
+                          }}
+                          min={0}
+                          max={nativeMaxPitch - 50}
+                          step={10}
+                        />
+                      </label>
+                      <label>Max: 
+                        <input 
+                          type="number" 
+                          value={nativeMaxPitch}
+                          onChange={(e) => {
+                            const newValue = Number(e.target.value);
+                            if (!isNaN(newValue) && newValue <= 1000 && newValue > nativeMinPitch + 50) {
+                              setNativeMaxPitch(newValue);
+                            }
+                          }}
+                          min={nativeMinPitch + 50}
+                          max={1000}
+                          step={10}
+                        />
+                      </label>
+                      <button 
+                        className="reset-button"
+                        onClick={resetNativeYAxisRange}
+                        title="Reset to defaults"
+                      >
+                        ↺
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="setting-group">
+                  <label className="setting-label">
+                    <span>Your Recording Y-Axis Range (Hz)</span>
+                    <div className="setting-description">
+                      Adjust the minimum and maximum pitch values for your recording display
+                    </div>
+                  </label>
+                  <div className="setting-controls y-axis-range-controls">
+                    <div className="range-input-group">
+                      <label>Min: 
+                        <input 
+                          type="number" 
+                          value={userMinPitch}
+                          onChange={(e) => {
+                            const newValue = Number(e.target.value);
+                            if (!isNaN(newValue) && newValue >= 0 && newValue < userMaxPitch - 50) {
+                              setUserMinPitch(newValue);
+                            }
+                          }}
+                          min={0}
+                          max={userMaxPitch - 50}
+                          step={10}
+                        />
+                      </label>
+                      <label>Max: 
+                        <input 
+                          type="number" 
+                          value={userMaxPitch}
+                          onChange={(e) => {
+                            const newValue = Number(e.target.value);
+                            if (!isNaN(newValue) && newValue <= 1000 && newValue > userMinPitch + 50) {
+                              setUserMaxPitch(newValue);
+                            }
+                          }}
+                          min={userMinPitch + 50}
+                          max={1000}
+                          step={10}
+                        />
+                      </label>
+                      <button 
+                        className="reset-button"
+                        onClick={resetUserYAxisRange}
+                        title="Reset to defaults"
+                      >
+                        ↺
+                      </button>
+                    </div>
                   </div>
                 </div>
                 
@@ -2886,6 +3046,125 @@ const App: React.FC = () => {
         
         .shortcuts-list strong {
           margin-right: 1rem;
+        }
+        
+        /* Y-Axis Range Controls */
+        .y-axis-range-controls {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        
+        .range-input-group {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+        
+        .range-input-group label {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.9rem;
+        }
+        
+        .range-input-group input {
+          width: 70px;
+          padding: 4px 6px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          font-size: 0.9rem;
+        }
+        
+        .reset-button {
+          background: none;
+          border: none;
+          color: #1976d2;
+          font-size: 1.1rem;
+          cursor: pointer;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+        }
+        
+        .reset-button:hover {
+          background-color: rgba(25, 118, 210, 0.1);
+        }
+        
+        .range-preview {
+          display: flex;
+          align-items: stretch;
+          gap: 12px;
+        }
+        
+        .range-preview-label {
+          font-size: 0.9rem;
+          flex-shrink: 0;
+          padding-top: 8px;
+        }
+        
+        .range-preview-box {
+          flex-grow: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          position: relative;
+        }
+        
+        .range-preview-scale {
+          width: 20px;
+          height: 100px;
+          background: linear-gradient(to bottom, #6bb5ff, #1976d2);
+          border-radius: 10px;
+          margin: 4px 0;
+        }
+        
+        .range-preview-max, .range-preview-min {
+          font-size: 0.8rem;
+          color: #666;
+        }
+        
+        /* Mobile styles for range controls */
+        @media (max-width: 768px) {
+          .range-input-group {
+            flex-wrap: wrap;
+          }
+          
+          .range-preview {
+            flex-direction: column;
+            align-items: center;
+          }
+          
+          .range-preview-label {
+            padding-top: 0;
+            margin-bottom: 4px;
+          }
+          
+          .range-preview-box {
+            width: 100%;
+          }
+          
+          .range-preview-scale {
+            height: 60px;
+          }
+          
+          .range-input-group input {
+            background-color: #333;
+            color: #fff;
+            border-color: #555;
+          }
+          
+          .range-preview-max, .range-preview-min {
+            color: #ccc;
+          }
+          
+          .reset-button {
+            color: #6bb5ff;
+          }
         }
       `}</style>
     </div>

@@ -87,11 +87,6 @@ export interface PitchGraphWithControlsProps {
 export type PitchGraphChartRef = Chart<'line', (number | null)[], number> | null;
 
 const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
-  // NOTE: This component intentionally ignores the yFit prop and maintains a fixed y-axis range of 50-500 Hz
-  // for consistent pitch visualization across different recordings.
-  // The range will only expand if actual pitch values exceed these limits.
-  // This is by design to allow easier comparison between different voice recordings.
-  
   const {
     times,
     pitches,
@@ -99,7 +94,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
     color = '#1976d2',
     loopStart,
     loopEnd,
-    yFit, // This prop is intentionally not used directly, see the comment above
+    yFit, // Now we will actually use this prop
     playbackTime = undefined,
     onChartReady,
     onLoopChange,
@@ -444,43 +439,19 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
   }, [chartRef.current, onChartReady]);
 
   useEffect(() => {
-    // Always use a fixed range of 50-500 Hz, only expanding if values exceed it
-    // Ignore yFit from props for consistent display
-    const validPitches = pitches.filter((p) => p !== null) as number[];
-    if (validPitches.length > 0) {
-      // Find the minimum and maximum pitch values
-      let minPitch = Math.min(...validPitches);
-      let maxPitch = Math.max(...validPitches);
-      
-      // Fixed range constants
+    // Check if yFit is provided and valid
+    if (yFit && yFit.length === 2 && yFit[0] < yFit[1]) {
+      console.log('[PitchGraph] Setting y-axis range from yFit:', yFit);
+      setYRange([yFit[0], yFit[1]]);
+    } else {
+      // Always fall back to the standard range if yFit is not provided or invalid
       const DEFAULT_MIN_PITCH = 50; // Default minimum (Hz)
       const DEFAULT_MAX_PITCH = 500; // Default maximum (Hz)
       
-      // Only adjust the range if values are outside the default range
-      // For minimum: use lower of DEFAULT_MIN_PITCH or actual min pitch (if it's lower)
-      // For maximum: use higher of DEFAULT_MAX_PITCH or actual max pitch (if it's higher)
-      minPitch = Math.min(DEFAULT_MIN_PITCH, Math.floor(minPitch)); 
-      maxPitch = Math.max(DEFAULT_MAX_PITCH, Math.ceil(maxPitch));
-      
-      // Round to create clean values
-      minPitch = Math.floor(minPitch / 10) * 10;
-      maxPitch = Math.ceil(maxPitch / 10) * 10;
-      
-      console.log('[PitchGraph] Setting fixed y-axis range:', { minPitch, maxPitch, actualMin: Math.min(...validPitches), actualMax: Math.max(...validPitches), yFitIgnored: yFit });
-      setYRange([minPitch, maxPitch]);
-    } else {
-      // No valid pitches, use default fixed range
-      console.log('[PitchGraph] No valid pitches, using default range: [50, 500]', { yFitIgnored: yFit });
-      setYRange([50, 500]);
+      console.log('[PitchGraph] Using standard range: [50, 500]');
+      setYRange([DEFAULT_MIN_PITCH, DEFAULT_MAX_PITCH]);
     }
-  }, [pitches]); // Removed yFit from dependencies to prevent it from triggering updates
-
-  // Add an effect to enforce y-axis range (ignoring yFit)
-  useEffect(() => {
-    if (yFit) {
-      console.log('[PitchGraph] Ignoring provided yFit range:', yFit, 'using fixed range instead');
-    }
-  }, [yFit]);
+  }, [yFit]); // Only depend on yFit changes since we're not using pitches anymore
 
   // Add an effect to update the chart whenever yRange changes
   useEffect(() => {
