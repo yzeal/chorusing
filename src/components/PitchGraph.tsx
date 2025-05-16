@@ -14,6 +14,30 @@ import {
 import type { Plugin, ChartTypeRegistry } from 'chart.js';
 import { DragController } from './DragController';
 
+// Create logging wrapper functions that only log in development mode
+const isProduction = import.meta.env.MODE === 'production';
+
+// Log function that suppresses logs in production
+const prodLog = (message: string, ...args: any[]) => {
+  if (!isProduction) {
+    prodLog(message, ...args);
+  }
+};
+
+/*
+// Warning function that suppresses warnings in production
+const prodWarn = (message: string, ...args: any[]) => {
+  if (!isProduction) {
+    prodWarn(message, ...args);
+  }
+};
+
+// Error logs will show even in production
+const prodError = (message: string, ...args: any[]) => {
+  prodError(message, ...args);
+};
+*/
+
 // Add new type definitions for segment coloring
 interface SegmentContext {
   p1DataIndex: number;
@@ -183,7 +207,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
     // 2. It's actually a mobile device (based on userAgent)
     const isActuallyMobile = mediaQuery || isMobileDevice;
     
-    console.log('[PitchGraph] Device detection:', {
+    prodLog('[PitchGraph] Device detection:', {
       mediaQuery,
       touchScreen,
       touchPoints,
@@ -197,7 +221,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
   }, []); // Empty dependency array means this only runs once on mount
 
   useEffect(() => {
-    console.log('[PitchGraph] Device type:', isMobile ? 'mobile' : 'desktop');
+    prodLog('[PitchGraph] Device type:', isMobile ? 'mobile' : 'desktop');
   }, [isMobile]);
 
   // Add a ref to track the last loop values to prevent unnecessary updates
@@ -373,11 +397,11 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
     if (chartRef.current && onChartReady) {
       // Only set up once to prevent multiple calls
       if (!chartRef.current.setViewRange) {
-        console.log('[PitchGraph] Exposing functions on chart instance');
+        prodLog('[PitchGraph] Exposing functions on chart instance');
         
         // Expose our internal state setter on the chart instance
         chartRef.current.setViewRange = (range: { min: number; max: number }) => {
-          console.log('[PitchGraph] External setViewRange called:', range);
+          prodLog('[PitchGraph] External setViewRange called:', range);
           
           // IMPORTANT: Add safeguard against invalid ranges (0-1s bug)
           // Don't allow setViewRange to set a tiny range for long content
@@ -387,7 +411,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
             !isUserInteractingRef.current;
             
           if (isRangeTooSmall) {
-            console.log('[PitchGraph] Prevented setting invalid small range:', {
+            prodLog('[PitchGraph] Prevented setting invalid small range:', {
               attemptedRange: range,
               totalMax: actualTotalRangeRef.current,
               currentRange: { ...zoomStateRef.current }
@@ -425,7 +449,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
               chartRef.current.update();
             }
           } else {
-            console.log('[PitchGraph] Rejected invalid view range:', range);
+            prodLog('[PitchGraph] Rejected invalid view range:', range);
           }
         };
         
@@ -441,14 +465,14 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
   useEffect(() => {
     // Check if yFit is provided and valid
     if (yFit && yFit.length === 2 && yFit[0] < yFit[1]) {
-      console.log('[PitchGraph] Setting y-axis range from yFit:', yFit);
+      prodLog('[PitchGraph] Setting y-axis range from yFit:', yFit);
       setYRange([yFit[0], yFit[1]]);
     } else {
       // Always fall back to the standard range if yFit is not provided or invalid
       const DEFAULT_MIN_PITCH = 50; // Default minimum (Hz)
       const DEFAULT_MAX_PITCH = 500; // Default maximum (Hz)
       
-      console.log('[PitchGraph] Using standard range: [50, 500]');
+      prodLog('[PitchGraph] Using standard range: [50, 500]');
       setYRange([DEFAULT_MIN_PITCH, DEFAULT_MAX_PITCH]);
     }
   }, [yFit]); // Only depend on yFit changes since we're not using pitches anymore
@@ -456,7 +480,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
   // Add an effect to update the chart whenever yRange changes
   useEffect(() => {
     if (chartRef.current && chartRef.current.options.scales?.y) {
-      console.log('[PitchGraph] Applying y-axis range to chart:', yRange);
+      prodLog('[PitchGraph] Applying y-axis range to chart:', yRange);
       
       chartRef.current.options.scales.y.min = yRange[0];
       chartRef.current.options.scales.y.max = yRange[1];
@@ -485,7 +509,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
       max: Math.min(initialViewDuration || totalDataRange.max, totalDataRange.max)
     };
     
-    console.log('[PitchGraph] Resetting zoom:', {
+    prodLog('[PitchGraph] Resetting zoom:', {
       resetRange,
       initialViewDuration: initialViewDuration,
       totalRange: totalDataRange,
@@ -526,7 +550,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
     // This avoids unwanted resets during regular playback after the chart is already set up
     const isInitialLoadOrReset = currentViewMax <= 10 && currentViewMin === 0;
     
-    console.log('[PitchGraph] Updating total data range:', {
+    prodLog('[PitchGraph] Updating total data range:', {
         oldRange: totalDataRange,
         newMax,
         dataPoints: times.length,
@@ -562,7 +586,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
         
       // If we're fixing the 0-1s bug, log it
       if (shouldForceWiderInitialView) {
-        console.log('[PitchGraph] Fixing restricted view range:', {
+        prodLog('[PitchGraph] Fixing restricted view range:', {
           currentViewMin,
           currentViewMax,
           newMax,
@@ -582,7 +606,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
         max: newMax
       };
       
-      console.log('[PitchGraph] Setting initial view range:', {
+      prodLog('[PitchGraph] Setting initial view range:', {
         updatedRange,
         initialViewDuration,
         totalDuration: newMax,
@@ -602,7 +626,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
         
         // If we have a chart, update it directly too
         if (chartRef.current && chartRef.current.options.scales?.x) {
-          console.log('[PitchGraph] Directly setting chart scales:', {
+          prodLog('[PitchGraph] Directly setting chart scales:', {
             min: updatedRange.min,
             max: updatedRange.max,
             totalDataRangeMax: newMax
@@ -613,12 +637,12 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
           chartRef.current.update('none');
         }
       } else {
-        console.log('[PitchGraph] Skipping view range reset: not initial load or jump in progress');
+        prodLog('[PitchGraph] Skipping view range reset: not initial load or jump in progress');
         // Still update the total data range, but don't change the view
         setTotalDataRange({ min: 0, max: newMax });
       }
     } else {
-      console.log('[PitchGraph] Skipping initial view setup, already viewing content or user is interacting');
+      prodLog('[PitchGraph] Skipping initial view setup, already viewing content or user is interacting');
       setTotalDataRange({ min: 0, max: newMax });
     }
   }, [times, totalDuration, initialViewDuration, isUserRecording, isJumpingToPlayback, isMobile]);
@@ -670,7 +694,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
       
       // Otherwise, limit to max range
       newRange = maxViewRange;
-      console.log('[PitchGraph] Limiting zoom out to maximum view range:', maxViewRange);
+      prodLog('[PitchGraph] Limiting zoom out to maximum view range:', maxViewRange);
     }
     
     // Don't allow zooming in beyond minimum view range
@@ -810,7 +834,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
         const currentRange = zoomStateRef.current.max - zoomStateRef.current.min;
         const maxRange = actualTotalRangeRef.current;
         
-        console.log('[PitchGraph] Pan attempt:', {
+        prodLog('[PitchGraph] Pan attempt:', {
             currentRange,
             maxRange,
             zoomState: { ...zoomStateRef.current },
@@ -826,11 +850,11 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
             currentRange > 0 && 
             zoomStateRef.current.min >= 0 &&
             zoomStateRef.current.max <= maxRange) {
-            console.log('[PitchGraph] Starting pan');
+            prodLog('[PitchGraph] Starting pan');
             isPanningRef.current = true;
             lastMouseXRef.current = e.offsetX;
         } else {
-            console.log('[PitchGraph] Pan prevented - fully zoomed out or invalid range');
+            prodLog('[PitchGraph] Pan prevented - fully zoomed out or invalid range');
         }
     }
   };
@@ -854,7 +878,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
     };
     
     // Log touchStart for debugging
-    console.log('[PitchGraph] Touch start, current view:', {
+    prodLog('[PitchGraph] Touch start, current view:', {
       min: currentValidRange.min,
       max: currentValidRange.max,
       range: currentValidRange.max - currentValidRange.min,
@@ -872,7 +896,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
       
       // IMPROVEMENT: Add minimum distance check to avoid accidental pinches
       if (initialDistance < 30) {
-        console.log('[PitchGraph] Ignoring pinch with small initial distance:', initialDistance);
+        prodLog('[PitchGraph] Ignoring pinch with small initial distance:', initialDistance);
         return;
       }
       
@@ -908,7 +932,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
         actualTotalRangeRef.current > 1;
       
       if (hasRangeReset) {
-        console.log('[PitchGraph] Detected unwanted view reset during touch start:', {
+        prodLog('[PitchGraph] Detected unwanted view reset during touch start:', {
           before: currentValidRange,
           after: newRange,
           totalMax: actualTotalRangeRef.current
@@ -944,7 +968,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
     
     // If we needed to correct the range, update it before processing touch movement
     if (validatedRange !== currentRange) {
-      console.log('[PitchGraph] Fixed invalid range at start of touch move');
+      prodLog('[PitchGraph] Fixed invalid range at start of touch move');
       zoomStateRef.current = { ...validatedRange };
       setViewRange(validatedRange);
       
@@ -975,7 +999,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
         return;
       }
       
-      console.log('[PitchGraph] Pinch zoom detected', {
+      prodLog('[PitchGraph] Pinch zoom detected', {
         initialDistance,
         newDistance,
         currentViewRange: `${currentRange.min.toFixed(2)} - ${currentRange.max.toFixed(2)}`,
@@ -1037,7 +1061,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
         newMax = Math.min(actualTotalRangeRef.current, center + 0.25);
       }
       
-      console.log('[PitchGraph] New zoom range: ', { newMin, newMax });
+      prodLog('[PitchGraph] New zoom range: ', { newMin, newMax });
       
       // Update zoom state
       zoomStateRef.current = { min: newMin, max: newMax };
@@ -1101,7 +1125,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
       
       // Log occasionally to debug - increase frequency for testing this fix
       if (Math.random() < 0.1) {
-        console.log('[PitchGraph] Mobile Pan:', {
+        prodLog('[PitchGraph] Mobile Pan:', {
           touchDeltaX,
           pixelsPerUnit,
           deltaValue,
@@ -1167,7 +1191,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
     }, 300); // Slightly longer delay for touch to account for possible taps that follow
     
     // Add debugging log
-    console.log('[PitchGraph] Touch interaction ended, current view:', {
+    prodLog('[PitchGraph] Touch interaction ended, current view:', {
       min: zoomStateRef.current.min,
       max: zoomStateRef.current.max,
       range: zoomStateRef.current.max - zoomStateRef.current.min,
@@ -1531,7 +1555,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
   // Reset hasInitializedRef when user recording changes
   useEffect(() => {
     if (isUserRecording) {
-      console.log('[PitchGraph] User recording detected, resetting initialization flag');
+      prodLog('[PitchGraph] User recording detected, resetting initialization flag');
       hasInitializedRef.current = false;
     }
   }, [isUserRecording, times.length]);
@@ -1539,7 +1563,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
   // Modify auto-reset zoom to only trigger on initial load
   useEffect(() => {
     if (!hasInitializedRef.current && times.length > 0) {
-      console.log('[PitchGraph] Initial load detected, resetting zoom');
+      prodLog('[PitchGraph] Initial load detected, resetting zoom');
       handleResetZoom();
       hasInitializedRef.current = true;
     }
@@ -1678,7 +1702,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
     // Handle left boundary - never go below 0
     if (newMin < 0) {
       // Log when we hit the left boundary
-      console.log('[PitchGraph] Hit left boundary during pan');
+      prodLog('[PitchGraph] Hit left boundary during pan');
       newMin = 0;
       newMax = windowSize; // Maintain window size
     }
@@ -1686,7 +1710,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
     // Handle right boundary - never go beyond max range
     if (newMax > maxRange) {
       // Log when we hit the right boundary
-      console.log('[PitchGraph] Hit right boundary during pan', {
+      prodLog('[PitchGraph] Hit right boundary during pan', {
         newMax,
         maxRange,
         delta
@@ -1702,7 +1726,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
     
     // Safety check for invalid ranges
     if (newMax - newMin < minViewRange || newMax <= newMin) {
-      console.log('[PitchGraph] Invalid range detected during pan calculation, using fallback values');
+      prodLog('[PitchGraph] Invalid range detected during pan calculation, using fallback values');
       // Use a safe fallback that maintains the current window position as much as possible
       if (currentMin < 0.5) {
         // If we're at the start, stay at the start
@@ -1736,7 +1760,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
         currentMax - currentMin <= 1 && 
         totalRange > 2;  // Use a smaller threshold for short videos
       
-      console.log('[PitchGraph] Delayed initialization check:', {
+      prodLog('[PitchGraph] Delayed initialization check:', {
         currentView: { min: currentMin, max: currentMax },
         totalRange,
         hasSmallViewBug,
@@ -1744,7 +1768,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
       });
       
       if (hasSmallViewBug) {
-        console.log('[PitchGraph] FIXING 0-1s VIEW RANGE ON INITIAL LOAD');
+        prodLog('[PitchGraph] FIXING 0-1s VIEW RANGE ON INITIAL LOAD');
         
         // For short videos, use the full range
         const newRange = { min: 0, max: totalRange };
@@ -1787,7 +1811,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
         max: Math.min(10, totalRange)
       };
       
-      console.log('[PitchGraph] Correcting invalid view range:', {
+      prodLog('[PitchGraph] Correcting invalid view range:', {
         originalRange: range,
         correctedRange: safeRange,
         reason: isTooSmall ? 'too small' : 'invalid values',
@@ -1818,7 +1842,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
       actualTotalRangeRef.current > 5;
     
     if (hasSmallViewBug) {
-      console.log('[PitchGraph] Fixed 0-1s view range bug after update:', {
+      prodLog('[PitchGraph] Fixed 0-1s view range bug after update:', {
         buggyRange: currentRange,
         totalMax: actualTotalRangeRef.current
       });
