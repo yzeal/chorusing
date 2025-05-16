@@ -2333,21 +2333,6 @@ const App: React.FC = () => {
               </div>
               
               <div className="settings-section">
-                <h3>Audio Input</h3>
-                <div className="setting-group">
-                  <label className="setting-label">
-                    <span>Microphone Selection</span>
-                    <div className="setting-description">
-                      Choose which microphone to use for recording (desktop browsers only)
-                    </div>
-                  </label>
-                  <div className="setting-placeholder">
-                    <i>Microphone selection dropdown will be implemented here</i>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="settings-section">
                 <h3>Interface Settings</h3>
                 <div className="setting-group">
                   <label className="setting-label">
@@ -2656,7 +2641,7 @@ const App: React.FC = () => {
             max-height: 100vh;
             border-radius: 0;
             background-color: #242424; /* Dark background for mobile */
-            color: #e0e0e0; /* Light text for dark background */
+            color: #ffffff; /* Brightest text for dark background */
           }
           
           .overlay-header {
@@ -2664,13 +2649,13 @@ const App: React.FC = () => {
           }
           
           .overlay-header h2 {
-            color: #e0e0e0;
+            color: #ffffff;
             font-size: 1.2rem;
           }
           
           .overlay-body {
             padding: 0.75rem;
-            color: #e0e0e0;
+            color: #ffffff;
           }
           
           .overlay-footer {
@@ -2682,42 +2667,107 @@ const App: React.FC = () => {
             height: 36px;
           }
           
+          .app-header {
+            padding: 0.25rem 0;
+          }
+          
+          .help-button, .settings-button, .close-button {
+            font-size: 1.5rem;
+          }
+          
           .close-button {
-            color: #e0e0e0;
+            color: #ffffff;
           }
           
           .guide-section h3,
           .settings-section h3 {
-            color: #4d9dff; /* Lighter blue for dark background */
+            color: #6bb5ff; /* Even brighter blue for dark background */
             border-bottom: 1px solid #444;
           }
           
           .guide-section h4 {
-            color: #e0e0e0;
+            color: #ffffff;
           }
           
           .guide-section p,
           .guide-section li,
           .setting-description,
           .shortcuts-list li {
-            color: #e0e0e0;
+            color: #ffffff;
           }
           
           .setting-label span {
-            color: #e0e0e0;
+            color: #ffffff;
           }
           
           .setting-placeholder {
             background-color: #333;
-            color: #ccc;
+            color: #ffffff;
           }
           
           .guide-section strong,
           .shortcuts-list strong {
-            color: #fff;
+            color: #ffffff;
+            font-weight: 700; /* Bolder for more emphasis */
           }
           
-          /* ... existing mobile styles ... */
+          /* Fix for list markers in dark mode */
+          .guide-section ul li::marker,
+          .guide-section ol li::marker {
+            color: #ffffff;
+          }
+          
+          /* Increase contrast for all text elements */
+          .guide-section *,
+          .settings-section * {
+            color: #ffffff !important; /* Force white text everywhere */
+          }
+          
+          /* Special styling for headings */
+          .guide-section h3,
+          .settings-section h3 {
+            color: #6bb5ff !important; /* Keep headings blue but brighter */
+          }
+          
+          /* Ensure all placeholders are visible */
+          .setting-placeholder i {
+            color: #ffffff;
+          }
+          
+          .pitch-graph-container {
+            touch-action: none;
+            height: 160px !important;
+            min-height: 160px !important;
+            max-height: 160px !important;
+            width: 100% !important;
+            max-width: 100% !important; 
+            box-sizing: border-box;
+            padding: 0;
+            margin: 0;
+          }
+          
+          .chorusing-title {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+          }
+          
+          .container, main, section, .pitch-graph-container, .chorusing-title {
+            font-size: 0.95rem;
+          }
+          
+          button, input, select {
+            font-size: 0.95rem !important;
+            padding: 4px 8px !important;
+          }
+          
+          .auto-loop-label {
+            white-space: normal;
+            line-height: 1.2;
+          }
+          
+          .loop-controls-row {
+            flex-wrap: wrap;
+          }
         }
         
         /* Prevent body scrolling when overlay is open */
