@@ -2086,77 +2086,78 @@ const App: React.FC = () => {
       // Declare variables outside switch to avoid linter errors
       let media, xMin, xMax, nativeMedia, recordButtons, recordButton, stopButton;
       
-      switch (e.key.toLowerCase()) {
-        case 'n': // Use 'n' instead of spacebar for now
-          // Play/pause native recording
-          media = getActiveMediaElement();
-          if (media) {
-            if (media.paused) {
-              media.play().catch(err => console.error('Error playing media:', err));
-            } else {
-              media.pause();
-            }
-          }
-          break;
-          
-        case 'l':
-          // Loop visible button logic
-          if (nativeChartInstance?.scales?.x) {
-            xMin = nativeChartInstance.scales.x.min;
-            xMax = nativeChartInstance.scales.x.max;
-            console.log('Setting loop to visible region:', xMin, xMax);
-            userSetLoopRef.current = { start: xMin, end: xMax };
-            setLoopStartWithLogging(xMin);
-            setLoopEndWithLogging(xMax);
-            
-            // Optional: Jump to loop start
-            nativeMedia = getActiveMediaElement();
-            if (nativeMedia) {
-              nativeMedia.currentTime = xMin;
-            }
-          }
-          break;
-          
-        case 'r':
-          // Find and click the Record button
-          recordButtons = Array.from(document.querySelectorAll('button'));
-
-          stopButton = recordButtons.find(btn => 
-            btn.textContent?.trim() === 'Stop'
-          );
-
-          recordButton = recordButtons.find(btn => 
-            btn.textContent?.trim() === 'Record'
-          );
-          
-          if (stopButton && !stopButton.disabled) {
-            console.log('Clicking Stop button');
-            stopButton.click();
+      // Use the key to determine which action to perform
+      const key = e.key.toLowerCase();
+      
+      // Play/pause native recording
+      if (key === keyboardShortcuts.playNative) {
+        media = getActiveMediaElement();
+        if (media) {
+          if (media.paused) {
+            media.play().catch(err => console.error('Error playing media:', err));
           } else {
-            if (recordButton) {
-              console.log('Clicking Record button');
-              recordButton.click();
-            }
+            media.pause();
           }
-          break;
+        }
+      }
+      
+      // Set loop to visible region
+      else if (key === keyboardShortcuts.loop) {
+        if (nativeChartInstance?.scales?.x) {
+          xMin = nativeChartInstance.scales.x.min;
+          xMax = nativeChartInstance.scales.x.max;
+          console.log('Setting loop to visible region:', xMin, xMax);
+          userSetLoopRef.current = { start: xMin, end: xMax };
+          setLoopStartWithLogging(xMin);
+          setLoopEndWithLogging(xMax);
           
-        case 'e':
-          // Play/pause user recording
-          if (userAudioRef.current) {
-            if (userAudioRef.current.paused) {
-              userAudioRef.current.play().catch(err => console.error('Error playing user audio:', err));
-            } else {
-              userAudioRef.current.pause();
-            }
+          // Optional: Jump to loop start
+          nativeMedia = getActiveMediaElement();
+          if (nativeMedia) {
+            nativeMedia.currentTime = xMin;
           }
-          break;
-          
-        case 'j':
-          // Jump to playback position
-          if (nativeMediaDuration > 30) {
-            jumpToPlaybackPosition();
+        }
+      }
+      
+      // Record/stop
+      else if (key === keyboardShortcuts.record) {
+        recordButtons = Array.from(document.querySelectorAll('button'));
+        
+        stopButton = recordButtons.find(btn => 
+          btn.textContent?.trim() === 'Stop'
+        );
+        
+        recordButton = recordButtons.find(btn => 
+          btn.textContent?.trim() === 'Record'
+        );
+        
+        if (stopButton && !stopButton.disabled) {
+          console.log('Clicking Stop button');
+          stopButton.click();
+        } else {
+          if (recordButton) {
+            console.log('Clicking Record button');
+            recordButton.click();
           }
-          break;
+        }
+      }
+      
+      // Play/pause user recording
+      else if (key === keyboardShortcuts.playUser) {
+        if (userAudioRef.current) {
+          if (userAudioRef.current.paused) {
+            userAudioRef.current.play().catch(err => console.error('Error playing user audio:', err));
+          } else {
+            userAudioRef.current.pause();
+          }
+        }
+      }
+      
+      // Jump to playback position
+      else if (key === keyboardShortcuts.jumpToPlayback) {
+        if (nativeMediaDuration > 30) {
+          jumpToPlaybackPosition();
+        }
       }
     };
     
@@ -2167,6 +2168,48 @@ const App: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [nativeChartInstance, showGuide, showSettings, nativeMediaDuration, jumpToPlaybackPosition]);
+
+  // Add state for customizable keyboard shortcuts
+  const [keyboardShortcuts, setKeyboardShortcuts] = useState<Record<string, string>>(() => {
+    const savedShortcuts = localStorage.getItem('keyboardShortcuts');
+    if (savedShortcuts) {
+      try {
+        return JSON.parse(savedShortcuts);
+      } catch (e) {
+        console.error('Error parsing saved shortcuts:', e);
+      }
+    }
+    // Default shortcuts
+    return {
+      playNative: 'n',
+      loop: 'l',
+      record: 'r',
+      playUser: 'e',
+      jumpToPlayback: 'j'
+    };
+  });
+
+  // Add function to save shortcuts
+  const saveKeyboardShortcut = useCallback((action: string, key: string) => {
+    setKeyboardShortcuts(prev => {
+      const updated = { ...prev, [action]: key };
+      localStorage.setItem('keyboardShortcuts', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  // Add function to reset shortcuts to defaults
+  const resetKeyboardShortcuts = useCallback(() => {
+    const defaults = {
+      playNative: 'n',
+      loop: 'l',
+      record: 'r',
+      playUser: 'e',
+      jumpToPlayback: 'j'
+    };
+    localStorage.setItem('keyboardShortcuts', JSON.stringify(defaults));
+    setKeyboardShortcuts(defaults);
+  }, []);
 
   return (
     <div 
@@ -2996,19 +3039,114 @@ const App: React.FC = () => {
                 <div className="settings-section">
                   <h3>Keyboard Shortcuts</h3>
                   <div className="setting-group">
-                    <div className="setting-description">
-                      Current keyboard shortcuts:
+                    <div className="keyboard-shortcut-list">
+                      <div className="shortcut-item">
+                        <span>Play/pause native recording:</span>
+                        <div className="shortcut-input-container">
+                          <input 
+                            type="text" 
+                            value={keyboardShortcuts.playNative}
+                            onChange={(e) => saveKeyboardShortcut('playNative', e.target.value.length ? e.target.value[0].toLowerCase() : '')}
+                            maxLength={1}
+                            className="shortcut-input"
+                          />
+                          <button 
+                            onClick={() => saveKeyboardShortcut('playNative', 'n')} 
+                            title="Reset to default"
+                            className="reset-button"
+                          >
+                            ↺
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="shortcut-item">
+                        <span>Set loop to visible area:</span>
+                        <div className="shortcut-input-container">
+                          <input 
+                            type="text" 
+                            value={keyboardShortcuts.loop}
+                            onChange={(e) => saveKeyboardShortcut('loop', e.target.value.length ? e.target.value[0].toLowerCase() : '')}
+                            maxLength={1}
+                            className="shortcut-input"
+                          />
+                          <button 
+                            onClick={() => saveKeyboardShortcut('loop', 'l')} 
+                            title="Reset to default"
+                            className="reset-button"
+                          >
+                            ↺
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="shortcut-item">
+                        <span>Record/stop recording:</span>
+                        <div className="shortcut-input-container">
+                          <input 
+                            type="text" 
+                            value={keyboardShortcuts.record}
+                            onChange={(e) => saveKeyboardShortcut('record', e.target.value.length ? e.target.value[0].toLowerCase() : '')}
+                            maxLength={1}
+                            className="shortcut-input"
+                          />
+                          <button 
+                            onClick={() => saveKeyboardShortcut('record', 'r')} 
+                            title="Reset to default"
+                            className="reset-button"
+                          >
+                            ↺
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="shortcut-item">
+                        <span>Play/pause your recording:</span>
+                        <div className="shortcut-input-container">
+                          <input 
+                            type="text" 
+                            value={keyboardShortcuts.playUser}
+                            onChange={(e) => saveKeyboardShortcut('playUser', e.target.value.length ? e.target.value[0].toLowerCase() : '')}
+                            maxLength={1}
+                            className="shortcut-input"
+                          />
+                          <button 
+                            onClick={() => saveKeyboardShortcut('playUser', 'e')} 
+                            title="Reset to default"
+                            className="reset-button"
+                          >
+                            ↺
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div className="shortcut-item">
+                        <span>Jump to playback position:</span>
+                        <div className="shortcut-input-container">
+                          <input 
+                            type="text" 
+                            value={keyboardShortcuts.jumpToPlayback}
+                            onChange={(e) => saveKeyboardShortcut('jumpToPlayback', e.target.value.length ? e.target.value[0].toLowerCase() : '')}
+                            maxLength={1}
+                            className="shortcut-input"
+                          />
+                          <button 
+                            onClick={() => saveKeyboardShortcut('jumpToPlayback', 'j')} 
+                            title="Reset to default"
+                            className="reset-button"
+                          >
+                            ↺
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <ul className="shortcuts-list">
-                      <li><strong>Play/Pause native recording</strong>: n</li>
-                      <li><strong>Loop visible</strong>: l</li>
-                      <li><strong>Start/stop user recording</strong>: r</li>
-                      <li><strong>Play/Pause user recording</strong>: e</li>
-                      <li><strong>Jump to playback position</strong>: j</li>
-                    </ul>
-                    <div className="setting-placeholder">
-                      <i>Shortcut customization will be available in a future update</i>
-                    </div>
+                    
+                    <button 
+                      className="settings-reset-button" 
+                      onClick={resetKeyboardShortcuts}
+                    >
+                      Reset All Shortcuts
+                    </button>
                   </div>
                 </div>
               )}
@@ -3907,6 +4045,51 @@ const App: React.FC = () => {
           
           .settings-help-text {
             color: #ccc;
+          }
+        }
+      `}</style>
+      <style>{`
+        .keyboard-shortcut-list {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+
+        .shortcut-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .shortcut-input-container {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .shortcut-input {
+          width: 40px;
+          height: 32px;
+          text-align: center;
+          font-size: 16px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+        }
+
+        /* Mobile styling */
+        @media (max-width: 768px) {
+          .shortcut-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+          }
+          
+          .shortcut-input {
+            background-color: #333;
+            color: #fff;
+            border-color: #555;
           }
         }
       `}</style>
