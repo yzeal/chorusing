@@ -2058,6 +2058,106 @@ const App: React.FC = () => {
     }
   }, [smoothingStyle, smoothingLevel, separateSmoothingSettings, userSmoothingLevel, audioBlob]);
 
+  // Add a simple keyboard shortcut handler
+  useEffect(() => {
+    // Only set up keyboard shortcuts on desktop
+    if (isMobileDevice()) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Skip if user is typing in an input field
+      if (e.target instanceof HTMLInputElement || 
+          e.target instanceof HTMLTextAreaElement || 
+          e.target instanceof HTMLSelectElement) {
+        return;
+      }
+      
+      // Skip if modifiers are pressed
+      if (e.ctrlKey || e.altKey || e.metaKey) {
+        return;
+      }
+      
+      // Skip if overlays are open
+      if (showGuide || showSettings) {
+        return;
+      }
+      
+      console.log('Keyboard shortcut:', e.key);
+      
+      // Declare variables outside switch to avoid linter errors
+      let media, xMin, xMax, nativeMedia, recordButtons, recordButton;
+      
+      switch (e.key.toLowerCase()) {
+        case 'n': // Use 'n' instead of spacebar for now
+          // Play/pause native recording
+          media = getActiveMediaElement();
+          if (media) {
+            if (media.paused) {
+              media.play().catch(err => console.error('Error playing media:', err));
+            } else {
+              media.pause();
+            }
+          }
+          break;
+          
+        case 'l':
+          // Loop visible button logic
+          if (nativeChartInstance?.scales?.x) {
+            xMin = nativeChartInstance.scales.x.min;
+            xMax = nativeChartInstance.scales.x.max;
+            console.log('Setting loop to visible region:', xMin, xMax);
+            userSetLoopRef.current = { start: xMin, end: xMax };
+            setLoopStartWithLogging(xMin);
+            setLoopEndWithLogging(xMax);
+            
+            // Optional: Jump to loop start
+            nativeMedia = getActiveMediaElement();
+            if (nativeMedia) {
+              nativeMedia.currentTime = xMin;
+            }
+          }
+          break;
+          
+        case 'r':
+          // Find and click the Record button
+          recordButtons = Array.from(document.querySelectorAll('button'));
+          recordButton = recordButtons.find(btn => 
+            btn.textContent?.trim() === 'Record'
+          );
+          
+          if (recordButton) {
+            console.log('Clicking Record button');
+            recordButton.click();
+          }
+          break;
+          
+        case 'e':
+          // Play/pause user recording
+          if (userAudioRef.current) {
+            if (userAudioRef.current.paused) {
+              userAudioRef.current.play().catch(err => console.error('Error playing user audio:', err));
+            } else {
+              userAudioRef.current.pause();
+            }
+          }
+          break;
+          
+        case 'j':
+          // Jump to playback position
+          if (nativeMediaDuration > 30) {
+            jumpToPlaybackPosition();
+          }
+          break;
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    console.log('Keyboard shortcuts enabled');
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [nativeChartInstance, showGuide, showSettings, nativeMediaDuration, jumpToPlaybackPosition]);
+
   return (
     <div 
       className="app-container"
@@ -2881,23 +2981,27 @@ const App: React.FC = () => {
                 </div>
               </div>
               
-              <div className="settings-section">
-                <h3>Keyboard Shortcuts</h3>
-                <div className="setting-group">
-                  <div className="setting-description">
-                    Current keyboard shortcuts:
-                  </div>
-                  <ul className="shortcuts-list">
-                    <li><strong>Play/Pause native recording</strong>: spacebar</li>
-                    <li><strong>Loop visible</strong>: l</li>
-                    <li><strong>Start/stop user recording</strong>: r</li>
-                    <li><strong>Play/Pause user recording</strong>: e</li>
-                  </ul>
-                  <div className="setting-placeholder">
-                    <i>Shortcut customization will be implemented here</i>
+              {/* Keyboard Shortcuts - only shown on desktop */}
+              {!isMobileDevice() && (
+                <div className="settings-section">
+                  <h3>Keyboard Shortcuts</h3>
+                  <div className="setting-group">
+                    <div className="setting-description">
+                      Current keyboard shortcuts:
+                    </div>
+                    <ul className="shortcuts-list">
+                      <li><strong>Play/Pause native recording</strong>: n</li>
+                      <li><strong>Loop visible</strong>: l</li>
+                      <li><strong>Start/stop user recording</strong>: r</li>
+                      <li><strong>Play/Pause user recording</strong>: e</li>
+                      <li><strong>Jump to playback position</strong>: j</li>
+                    </ul>
+                    <div className="setting-placeholder">
+                      <i>Shortcut customization will be available in a future update</i>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
               
               <div className="settings-section">
                 <h3>Interface Settings</h3>
