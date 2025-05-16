@@ -1923,6 +1923,44 @@ const App: React.FC = () => {
     return savedValue ? Number(savedValue) : 25; // Changed from 15 to 25 to match current behavior
   });
 
+  // Add state for pitch detection settings
+const [pitchDetectionSettings, setPitchDetectionSettings] = useState(() => {
+  const savedSettings = localStorage.getItem('pitchDetectionSettings');
+  if (savedSettings) {
+    try {
+      return JSON.parse(savedSettings);
+    } catch (e) {
+      console.error('Error parsing saved pitch detection settings:', e);
+    }
+  }
+  // Default settings - these match the constants at the top of the file
+  return {
+    minPitch: MIN_PITCH,
+    maxPitch: MAX_PITCH,
+    clarityThreshold: MIN_CLARITY
+  };
+});
+
+// Update pitch detection settings
+const updatePitchDetectionSettings = useCallback((setting: string, value: number) => {
+  setPitchDetectionSettings((prev: { minPitch: number; maxPitch: number; clarityThreshold: number }) => {
+    const updated = { ...prev, [setting]: value };
+    localStorage.setItem('pitchDetectionSettings', JSON.stringify(updated));
+    return updated;
+  });
+}, []);
+
+// Reset pitch detection settings to defaults
+const resetPitchDetectionSettings = useCallback(() => {
+  const defaults = {
+    minPitch: MIN_PITCH,
+    maxPitch: MAX_PITCH,
+    clarityThreshold: MIN_CLARITY
+  };
+  localStorage.setItem('pitchDetectionSettings', JSON.stringify(defaults));
+  setPitchDetectionSettings(defaults);
+}, []);
+
   // Add effects to save settings to localStorage when they change
   useEffect(() => {
     localStorage.setItem('smoothingStyle', smoothingStyle);
@@ -3162,8 +3200,66 @@ const App: React.FC = () => {
                       Configure the minimum and maximum pitch detection thresholds
                     </div>
                   </label>
-                  <div className="setting-placeholder">
-                    <i>Pitch detection range settings will be implemented here</i>
+                  <div className="setting-controls">
+                    <div className="setting-control-row">
+                      <label>Minimum Pitch (Hz):</label>
+                      <input 
+                        type="number" 
+                        min="20" 
+                        max="300" 
+                        step="5" 
+                        value={pitchDetectionSettings.minPitch} 
+                        onChange={(e) => updatePitchDetectionSettings('minPitch', Number(e.target.value))}
+                        className="settings-number-input"
+                      />
+                    </div>
+                    
+                    <div className="setting-control-row">
+                      <label>Maximum Pitch (Hz):</label>
+                      <input 
+                        type="number" 
+                        min="200" 
+                        max="1000" 
+                        step="10" 
+                        value={pitchDetectionSettings.maxPitch} 
+                        onChange={(e) => updatePitchDetectionSettings('maxPitch', Number(e.target.value))}
+                        className="settings-number-input"
+                      />
+                    </div>
+                    
+                    <div className="setting-control-row">
+                      <label>Clarity Threshold:</label>
+                      <div className="slider-with-value">
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="1" 
+                          step="0.05" 
+                          value={pitchDetectionSettings.clarityThreshold} 
+                          onChange={(e) => updatePitchDetectionSettings('clarityThreshold', Number(e.target.value))} 
+                          className="settings-slider" 
+                        />
+                        <div className="slider-value">{pitchDetectionSettings.clarityThreshold.toFixed(2)}</div>
+                      </div>
+                    </div>
+                    
+                    <div className="setting-description pitch-description">
+                      <p><strong>Recommended settings:</strong></p>
+                      <ul>
+                        <li>For male voices: Min 60-80 Hz, Max 400-500 Hz</li>
+                        <li>For female voices: Min 120-150 Hz, Max 500-700 Hz</li>
+                        <li>Higher clarity threshold = more reliable pitches but more gaps</li>
+                      </ul>
+                    </div>
+                    
+                    <div className="setting-control-row">
+                      <button 
+                        className="settings-reset-button" 
+                        onClick={resetPitchDetectionSettings}
+                      >
+                        Reset to Defaults
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -3358,6 +3454,25 @@ const App: React.FC = () => {
           gap: 4px;
           font-size: 12px;
         }
+
+        .settings-number-input {
+          width: 80px;
+          height: 32px;
+          text-align: center;
+          font-size: 16px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+        }
+
+        .pitch-description p {
+          margin-top: 15px;
+          margin-bottom: 8px;
+        }
+
+        .pitch-description ul {
+          margin-top: 0;
+          padding-left: 20px;
+        }
         
         @media (max-width: 768px) {
           .container {
@@ -3397,6 +3512,12 @@ const App: React.FC = () => {
           
           .loop-controls-row {
             flex-wrap: wrap;
+          }
+
+          .settings-number-input {
+            background-color: #333;
+            color: #fff;
+            border-color: #555;
           }
         }
         
