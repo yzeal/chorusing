@@ -239,6 +239,24 @@ const App: React.FC = () => {
     const savedValue = localStorage.getItem('userMaxPitch');
     return savedValue ? Number(savedValue) : DEFAULT_MAX_PITCH;
   });
+
+  // Add state for pitch detection settings
+  const [pitchDetectionSettings, setPitchDetectionSettings] = useState(() => {
+    const savedSettings = localStorage.getItem('pitchDetectionSettings');
+    if (savedSettings) {
+      try {
+        return JSON.parse(savedSettings);
+      } catch (e) {
+        console.error('Error parsing saved pitch detection settings:', e);
+      }
+    }
+    // Default settings - these match the constants at the top of the file
+    return {
+      minPitch: MIN_PITCH,
+      maxPitch: MAX_PITCH,
+      clarityThreshold: MIN_CLARITY
+    };
+  });
   
   // Save Y-axis range settings to localStorage when they change
   useEffect(() => {
@@ -448,10 +466,14 @@ const App: React.FC = () => {
         const detector = PitchDetector.forFloat32Array(frameSize);
         const pitches: (number | null)[] = [];
         const times: number[] = [];
+        
+        // Use user-defined pitch detection settings instead of constants
+        const { minPitch, maxPitch, clarityThreshold } = pitchDetectionSettings;
+        
         for (let i = 0; i + frameSize < channelData.length; i += hopSize) {
           const frame = channelData.slice(i, i + frameSize);
           const [pitch, clarity] = detector.findPitch(frame, sampleRate);
-          if (pitch >= MIN_PITCH && pitch <= MAX_PITCH && clarity >= MIN_CLARITY) {
+          if (pitch >= minPitch && pitch <= maxPitch && clarity >= clarityThreshold) {
             pitches.push(pitch);
           } else {
             pitches.push(null);
@@ -469,19 +491,19 @@ const App: React.FC = () => {
         
         const enhancedSmooth = smoothPitch(basicSmoothed, smoothingWindowSize);
         
-        console.log('[App] User recording smoothed with window size:', smoothingWindowSize);
+        console.log('[App] User recording processed with pitch settings:', { minPitch, maxPitch, clarityThreshold });
         
         setUserPitchData({ times, pitches: enhancedSmooth });
         
         // Calculate the initial range for user pitch data when extracted
-        const [minPitch, maxPitch] = calculateInitialPitchRange(enhancedSmooth);
+        const [minPitchRange, maxPitchRange] = calculateInitialPitchRange(enhancedSmooth);
         
         // Use the same y-axis range for user data as we do for native data
         // This makes it easier to compare the two
         const currentYFit = loopYFit || [DEFAULT_MIN_PITCH, DEFAULT_MAX_PITCH];
         const newYFit: [number, number] = [
-          Math.min(minPitch, currentYFit[0]),
-          Math.max(maxPitch, currentYFit[1])
+          Math.min(minPitchRange, currentYFit[0]),
+          Math.max(maxPitchRange, currentYFit[1])
         ];
         
         // Only update if the range has changed
@@ -498,7 +520,7 @@ const App: React.FC = () => {
       }
     };
     extract();
-  }, [audioBlob]);
+  }, [audioBlob, pitchDetectionSettings]); // Add pitchDetectionSettings to dependency array
 
   // Add a helper effect to force redraw of user recording when data changes
   React.useEffect(() => {
@@ -1923,23 +1945,6 @@ const App: React.FC = () => {
     return savedValue ? Number(savedValue) : 25; // Changed from 15 to 25 to match current behavior
   });
 
-  // Add state for pitch detection settings
-const [pitchDetectionSettings, setPitchDetectionSettings] = useState(() => {
-  const savedSettings = localStorage.getItem('pitchDetectionSettings');
-  if (savedSettings) {
-    try {
-      return JSON.parse(savedSettings);
-    } catch (e) {
-      console.error('Error parsing saved pitch detection settings:', e);
-    }
-  }
-  // Default settings - these match the constants at the top of the file
-  return {
-    minPitch: MIN_PITCH,
-    maxPitch: MAX_PITCH,
-    clarityThreshold: MIN_CLARITY
-  };
-});
 
 // Update pitch detection settings
 const updatePitchDetectionSettings = useCallback((setting: string, value: number) => {
@@ -2043,13 +2048,13 @@ const resetPitchDetectionSettings = useCallback(() => {
     }
   }, [smoothingStyle, smoothingLevel, separateSmoothingSettings, nativeSmoothingLevel, nativeChartInstance]);
 
-  // Add effect to reprocess user recording data
+  // Add effect to reprocess user recording data when settings change
   useEffect(() => {
     // Only reprocess if we have user recording data
     if (userPitchData.times.length > 0 && audioBlob) {
-      console.log('[App] Smoothing settings changed, reprocessing user pitch data');
+      console.log('[App] Settings changed, reprocessing user pitch data');
       
-      // We need to re-extract from the audio blob to apply new smoothing
+      // We need to re-extract from the audio blob to apply new settings
       const extract = async () => {
         try {
           const arrayBuffer = await audioBlob.arrayBuffer();
@@ -2063,10 +2068,13 @@ const resetPitchDetectionSettings = useCallback(() => {
           const pitches: (number | null)[] = [];
           const times: number[] = [];
           
+          // Use user-defined pitch detection settings
+          const { minPitch, maxPitch, clarityThreshold } = pitchDetectionSettings;
+          
           for (let i = 0; i + frameSize < channelData.length; i += hopSize) {
             const frame = channelData.slice(i, i + frameSize);
             const [pitch, clarity] = detector.findPitch(frame, sampleRate);
-            if (pitch >= MIN_PITCH && pitch <= MAX_PITCH && clarity >= MIN_CLARITY) {
+            if (pitch >= minPitch && pitch <= maxPitch && clarity >= clarityThreshold) {
               pitches.push(pitch);
             } else {
               pitches.push(null);
@@ -2084,7 +2092,12 @@ const resetPitchDetectionSettings = useCallback(() => {
           
           const enhancedSmooth = smoothPitch(basicSmoothed, smoothingWindowSize);
           
-          console.log('[App] User recording reprocessed with window size:', smoothingWindowSize);
+          console.log('[App] User recording reprocessed with settings:', {
+            minPitch,
+            maxPitch,
+            clarityThreshold,
+            smoothingWindowSize
+          });
           
           setUserPitchData({ times, pitches: enhancedSmooth });
         } catch (error) {
@@ -2094,7 +2107,14 @@ const resetPitchDetectionSettings = useCallback(() => {
       
       extract();
     }
-  }, [smoothingStyle, smoothingLevel, separateSmoothingSettings, userSmoothingLevel, audioBlob]);
+  }, [
+    smoothingStyle, 
+    smoothingLevel, 
+    separateSmoothingSettings, 
+    userSmoothingLevel, 
+    audioBlob, 
+    pitchDetectionSettings  // Add this to dependency array
+  ]);
 
   // Add a simple keyboard shortcut handler
   useEffect(() => {
