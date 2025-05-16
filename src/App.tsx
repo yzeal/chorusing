@@ -215,6 +215,34 @@ const App: React.FC = () => {
   // Get the chart instance reference for the user recording
   const [userChartInstance, setUserChartInstance] = useState<ExtendedChart | null>(null);
 
+  // Add state for overlay pages
+  const [showGuide, setShowGuide] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  
+  // Add keyboard event listener for Escape key
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showGuide) setShowGuide(false);
+        if (showSettings) setShowSettings(false);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    
+    // Add body class to prevent scrolling when overlay is open
+    if (showGuide || showSettings) {
+      document.body.classList.add('overlay-open');
+    } else {
+      document.body.classList.remove('overlay-open');
+    }
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.classList.remove('overlay-open');
+    };
+  }, [showGuide, showSettings]);
+
   // Add effect to reset user chart view on new recording
   React.useEffect(() => {
     if (userChartInstance && isUserRecording && userPitchData.times.length > 0) {
@@ -1812,7 +1840,23 @@ const App: React.FC = () => {
         </div>
       )}
       <div className="container">
-        <h1 className="chorusing-title">Chorusing Drill</h1>
+        <div className="app-header">
+          <button 
+            className="icon-button help-button" 
+            onClick={() => setShowGuide(true)}
+            title="User Guide"
+          >
+            ?
+          </button>
+          <h1 className="chorusing-title">Chorusing Drill</h1>
+          <button 
+            className="icon-button settings-button" 
+            onClick={() => setShowSettings(true)}
+            title="Settings"
+          >
+            ⚙️
+          </button>
+        </div>
         <main style={{ flex: 1, padding: '1rem 0', width: '100%' }}>
           {/* Native Recording Section */}
           <section style={{ marginBottom: '0.25rem' }}>
@@ -2038,9 +2082,447 @@ const App: React.FC = () => {
         </main>
         <Footer />
       </div>
+
+      {/* User Guide Overlay */}
+      {showGuide && (
+        <div className="overlay">
+          <div className="overlay-content guide-content">
+            <div className="overlay-header">
+              <h2>User Guide</h2>
+              <button 
+                className="icon-button close-button" 
+                onClick={() => setShowGuide(false)}
+                title="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="overlay-body">
+              <div className="guide-section">
+                <h3>Purpose of the Chorusing Trainer</h3>
+                <p>
+                  This tool provides an easy way to do high repetition chorusing practice.
+                  Chorusing in language learning is the practice of learners repeating words or phrases in unison with a native speaker or instructor.
+                  It's especially effective for developing fluency and natural speech in early stages of language acquisition, but will be helpful at any stage.
+                </p>
+                
+                <h4>Benefits</h4>
+                <ul>
+                  <li>Reinforces correct pronunciation, rhythm, and intonation</li>
+                  <li>Builds muscle memory for speech patterns</li>
+                  <li>Reduces anxiety about speaking</li>
+                  <li>Aids listening and imitation skills through synchronized repetition</li>
+                </ul>
+                
+                <h4>The Method</h4>
+                <ol>
+                  <li>Play a word, phrase or short sentence spoken by a native speaker in a loop</li>
+                  <li>Just listen a few times, really focus on what you hear (sounds, rhythm, pitch)</li>
+                  <li>Then say it out loud at exactly the same time as the native speaker</li>
+                  <li>Repeat this 10, 50, 100 times until you can match their rhythm perfectly</li>
+                  <li>Record yourself and see if your pitch curve shape matches that of the native speaker</li>
+                  <li>Repeat, repeat, repeat until you get it as perfect as you feel you can for that day</li>
+                  <li>Only then move on to another word, phrase or short sentence</li>
+                  <li>Do this daily for a few weeks and see</li>
+                </ol>
+              </div>
+              
+              <div className="guide-section">
+                <h3>Recording Length Recommendations</h3>
+                <h4>Optimal Recording Length</h4>
+                <ul>
+                  <li><strong>Ideal Length</strong>: 5-30 seconds</li>
+                  <li><strong>Maximum Recommended</strong>: 2 minutes</li>
+                </ul>
+                
+                <h4>Why Short Recordings Work Better</h4>
+                <ol>
+                  <li><strong>Better Focus</strong>: Short recordings help you focus on specific pitch patterns or problem areas</li>
+                  <li><strong>Easier Comparison</strong>: Comparing your recording with the native sample is more effective with shorter segments</li>
+                  <li><strong>Clearer Visualization</strong>: The pitch graph is more readable and detailed with shorter recordings</li>
+                  <li><strong>Faster Feedback</strong>: You can iterate and improve more quickly with shorter practice segments</li>
+                  <li><strong>Performance</strong>: Browser performance remains smooth with shorter recordings</li>
+                </ol>
+                
+                <h4>Tips for Effective Practice</h4>
+                <ul>
+                  <li>Record individual words or short phrases when starting out</li>
+                  <li>Progress to full sentences as you improve</li>
+                  <li>For longer content, break it into 15-30 second segments</li>
+                  <li>Use the loop region feature to practice specific parts of longer recordings</li>
+                  <li>Practice the same segment multiple times rather than recording longer passages</li>
+                </ul>
+              </div>
+              
+              <div className="guide-section">
+                <h3>Technical Considerations</h3>
+                <p>
+                  While there is no hard limit on recording length, browser performance may degrade with very long recordings, especially on mobile devices. 
+                  The app has been optimized for recordings in the 5-30 second range, which is ideal for focused practice. 
+                  Loading large video files on mobile devices can likewise be problematic. Consider editing large files or making short screen recordings of segments you want to practice.
+                </p>
+                
+                <h4>Caution for iPhone Users</h4>
+                <p>
+                  On the iPhone, starting a recording inside a web browser will cause all audio output to use the ringer's audio level. This can by default be very loud!
+                </p>
+                <p>
+                  To gain control over the ringer level on iPhone, you can:
+                </p>
+                <ol>
+                  <li><strong>Open Settings</strong>: Find and tap the Settings app on your iPhone's home screen</li>
+                  <li><strong>Go to Sounds & Haptics</strong>: Scroll down and tap on "Sounds & Haptics"</li>
+                  <li><strong>Adjust Ringer Volume</strong>: In the "Ringer and Alerts" section, you'll see a slider. Drag the slider left or right to adjust the ringer volume to your desired level</li>
+                  <li><strong>Change with Buttons (Optional)</strong>: If you prefer to use the volume buttons, you can enable "Change with Buttons" by toggling the switch to the right</li>
+                </ol>
+                
+                <h4>Supported File Formats</h4>
+                <p>Different browsers support different audio and video formats:</p>
+                <ul>
+                  <li><strong>Audio</strong>: MP3, WAV, OGG, AAC (M4A) are widely supported across browsers</li>
+                  <li><strong>Video</strong>: MP4 (H.264), WebM, and OGG (Theora) are most compatible</li>
+                  <li>For best compatibility, use MP3 for audio and MP4 (H.264) for video</li>
+                  <li>Some mobile browsers may have limitations with certain file formats</li>
+                </ul>
+              </div>
+              
+              <div className="guide-section">
+                <h3>Navigation and Zoom Controls</h3>
+                
+                <h4>Desktop Controls</h4>
+                <ul>
+                  <li><strong>Mouse wheel</strong>: Zoom in/out on the pitch curve</li>
+                  <li><strong>Click and drag</strong>: Pan the view horizontally when zoomed in</li>
+                  <li><strong>↺ button</strong>: Reset zoom to show the full content</li>
+                  <li><strong>Loop visible button</strong>: Set the playback loop to match the visible area</li>
+                </ul>
+                
+                <h4>Mobile Controls</h4>
+                <ul>
+                  <li><strong>Pinch gesture</strong>: Zoom in/out on the pitch curve</li>
+                  <li><strong>Single finger drag</strong>: Pan the view horizontally when zoomed in</li>
+                  <li><strong>↺ button</strong>: Reset zoom to show the full content</li>
+                  <li><strong>Loop visible button</strong>: Set the playback loop to match the visible area</li>
+                </ul>
+                
+                <h4>Additional Features</h4>
+                <ul>
+                  <li><strong>Drag loop selection edges</strong>: Drag the blue edges of the loop selection area on the graph to select the segment you want to practice</li>
+                  <li><strong>Drag graph edges</strong>: Drag from the margins of the graph to bring the loop selection edges into your current view any time</li>
+                  <li><strong>Auto-loop checkbox</strong>: When enabled, the loop region will automatically match the visible area when you pan</li>
+                  <li><strong>Loop delay</strong>: Adjusts the pause time (in milliseconds) between loop repetitions</li>
+                  <li><strong>Jump to playback</strong>: Jumps the view to center around the current playback position (only available for long videos)</li>
+                </ul>
+              </div>
+              
+              <div className="guide-section">
+                <h3>Tips for Effective Practice</h3>
+                <ol>
+                  <li>
+                    <strong>Compare native and your recordings</strong>:
+                    <ul>
+                      <li>Load a native recording using the "Load Native Recording" button</li>
+                      <li>Record your own voice using the microphone button</li>
+                      <li>Visually compare your pitch pattern with the native speaker</li>
+                      <li>The overall shape of the curve is important. Its position on the y-axis can differ depending on the natural pitch of your voice</li>
+                    </ul>
+                  </li>
+                  <li>
+                    <strong>Focus on specific segments</strong>:
+                    <ul>
+                      <li>Zoom in on challenging parts of the utterance</li>
+                      <li>Set a tight loop region around difficult pitch patterns</li>
+                      <li>Adjust the loop delay if needed to give yourself time to breathe between repetitions</li>
+                    </ul>
+                  </li>
+                  <li>
+                    <strong>Mobile-specific tips</strong>:
+                    <ul>
+                      <li>Hold your device in portrait orientation for better visualization</li>
+                      <li>Use small, deliberate pinch gestures for precise zooming</li>
+                      <li>Tap the reset zoom button on the curve (↺) if you get lost</li>
+                    </ul>
+                  </li>
+                </ol>
+              </div>
+              
+              <div className="guide-section">
+                <h3>Pitch Visualization Details</h3>
+                <p>
+                  The pitch visualization shows the fundamental frequency (pitch) of the voice over time:
+                </p>
+                <ul>
+                  <li><strong>Blue line</strong>: Your recorded voice</li>
+                  <li><strong>Green line</strong>: Native speaker's voice</li>
+                </ul>
+                <p>
+                  The y-axis shows frequency in Hertz (Hz), typically ranging from 50-500 Hz, with male voices generally lower (80-180 Hz) and female voices higher (160-300 Hz).
+                </p>
+              </div>
+            </div>
+            <div className="overlay-footer">
+              <button 
+                className="button close-overlay-button" 
+                onClick={() => setShowGuide(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Overlay */}
+      {showSettings && (
+        <div className="overlay">
+          <div className="overlay-content settings-content">
+            <div className="overlay-header">
+              <h2>Settings</h2>
+              <button 
+                className="icon-button close-button" 
+                onClick={() => setShowSettings(false)}
+                title="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="overlay-body">
+              <div className="settings-section">
+                <h3>Pitch Display Settings</h3>
+                <div className="setting-group">
+                  <label className="setting-label">
+                    <span>Y-Axis Range</span>
+                    <div className="setting-description">
+                      Adjust the minimum and maximum values for the pitch display
+                    </div>
+                  </label>
+                  <div className="setting-placeholder">
+                    <i>Pitch range adjustment will be implemented here</i>
+                  </div>
+                </div>
+                
+                <div className="setting-group">
+                  <label className="setting-label">
+                    <span>Pitch Curve Smoothing</span>
+                    <div className="setting-description">
+                      Choose the amount of smoothing applied to pitch curves
+                    </div>
+                  </label>
+                  <div className="setting-placeholder">
+                    <i>Smoothing method options will be implemented here</i>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="settings-section">
+                <h3>Keyboard Shortcuts</h3>
+                <div className="setting-group">
+                  <div className="setting-description">
+                    Current keyboard shortcuts:
+                  </div>
+                  <ul className="shortcuts-list">
+                    <li><strong>Play/Pause native recording</strong>: spacebar</li>
+                    <li><strong>Loop visible</strong>: l</li>
+                    <li><strong>Start/stop user recording</strong>: r</li>
+                    <li><strong>Play/Pause user recording</strong>: e</li>
+                  </ul>
+                  <div className="setting-placeholder">
+                    <i>Shortcut customization will be implemented here</i>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="settings-section">
+                <h3>Audio Input</h3>
+                <div className="setting-group">
+                  <label className="setting-label">
+                    <span>Microphone Selection</span>
+                    <div className="setting-description">
+                      Choose which microphone to use for recording (desktop browsers only)
+                    </div>
+                  </label>
+                  <div className="setting-placeholder">
+                    <i>Microphone selection dropdown will be implemented here</i>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="settings-section">
+                <h3>Interface Settings</h3>
+                <div className="setting-group">
+                  <label className="setting-label">
+                    <span>Tooltips</span>
+                    <div className="setting-description">
+                      Configure when and how tooltips are displayed
+                    </div>
+                  </label>
+                  <div className="setting-placeholder">
+                    <i>Tooltip configuration will be implemented here</i>
+                  </div>
+                </div>
+                
+                <div className="setting-group">
+                  <label className="setting-label">
+                    <span>Loop Overlay Appearance</span>
+                    <div className="setting-description">
+                      Adjust the transparency and color of the loop region overlay
+                    </div>
+                  </label>
+                  <div className="setting-placeholder">
+                    <i>Loop overlay appearance options will be implemented here</i>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="settings-section">
+                <h3>Advanced Settings</h3>
+                <div className="setting-group">
+                  <label className="setting-label">
+                    <span>Pitch Detection Range</span>
+                    <div className="setting-description">
+                      Configure the minimum and maximum pitch detection thresholds
+                    </div>
+                  </label>
+                  <div className="setting-placeholder">
+                    <i>Pitch detection range settings will be implemented here</i>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="overlay-footer">
+              <button 
+                className="button close-overlay-button" 
+                onClick={() => setShowSettings(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         .pitch-graph-container {
           touch-action: pinch-zoom pan-x pan-y;
+        }
+        
+        /* App header with navigation buttons */
+        .app-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 1rem;
+          padding: 0.5rem 0;
+        }
+        
+        /* Icon buttons for navigation */
+        .icon-button {
+          background: none;
+          border: none;
+          font-size: 1.5rem;
+          cursor: pointer;
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #1976d2;
+          transition: background-color 0.2s;
+        }
+        
+        .icon-button:hover {
+          background-color: rgba(25, 118, 210, 0.1);
+        }
+        
+        .help-button {
+          font-weight: bold;
+          font-size: 1.8rem;
+        }
+        
+        .settings-button {
+          font-size: 1.8rem;
+        }
+        
+        .close-button {
+          font-size: 1.8rem;
+        }
+        
+        /* Overlay styles */
+        .overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          overflow-y: auto;
+          padding: 1rem;
+        }
+        
+        .overlay-content {
+          background-color: white;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          width: 100%;
+          max-width: 800px;
+          max-height: 90vh;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          text-align: left; /* Ensure text is left-aligned */
+          color: #333; /* Ensure text is dark */
+        }
+        
+        .overlay-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 1rem;
+          border-bottom: 1px solid #eee;
+        }
+        
+        .overlay-header h2 {
+          margin: 0;
+          font-size: 1.5rem;
+          color: #333;
+        }
+        
+        .overlay-body {
+          padding: 1rem;
+          overflow-y: auto;
+          flex: 1;
+          color: #333; /* Ensure text is dark */
+        }
+        
+        .overlay-footer {
+          padding: 1rem;
+          border-top: 1px solid #eee;
+          display: flex;
+          justify-content: flex-end;
+        }
+        
+        .button {
+          padding: 0.5rem 1rem;
+          border-radius: 4px;
+          border: none;
+          background-color: #1976d2;
+          color: white;
+          font-weight: 500;
+          cursor: pointer;
+          font-size: 1rem;
+        }
+        
+        .button:hover {
+          background-color: #1565c0;
+        }
+        
+        .close-overlay-button {
+          min-width: 100px;
         }
         
         /* Loop controls styling */
@@ -2148,6 +2630,212 @@ const App: React.FC = () => {
         
         body {
           overflow-x: hidden;
+        }
+        
+        /* Prevent body scrolling when overlay is open */
+        body.overlay-open {
+          overflow: hidden;
+        }
+        
+        /* Mobile responsive adjustments */
+        @media (max-width: 768px) {
+          .container {
+            width: 100vw;
+            overflow-x: hidden;
+            box-sizing: border-box;
+            padding-left: max(2vw, env(safe-area-inset-left));
+            padding-right: max(2vw, env(safe-area-inset-right));
+          }
+          
+          .overlay {
+            padding: 0.5rem;
+          }
+          
+          .overlay-content {
+            max-width: 100%;
+            max-height: 100vh;
+            border-radius: 0;
+            background-color: #242424; /* Dark background for mobile */
+            color: #e0e0e0; /* Light text for dark background */
+          }
+          
+          .overlay-header {
+            border-bottom: 1px solid #444;
+          }
+          
+          .overlay-header h2 {
+            color: #e0e0e0;
+            font-size: 1.2rem;
+          }
+          
+          .overlay-body {
+            padding: 0.75rem;
+            color: #e0e0e0;
+          }
+          
+          .overlay-footer {
+            border-top: 1px solid #444;
+          }
+          
+          .icon-button {
+            width: 36px;
+            height: 36px;
+          }
+          
+          .close-button {
+            color: #e0e0e0;
+          }
+          
+          .guide-section h3,
+          .settings-section h3 {
+            color: #4d9dff; /* Lighter blue for dark background */
+            border-bottom: 1px solid #444;
+          }
+          
+          .guide-section h4 {
+            color: #e0e0e0;
+          }
+          
+          .guide-section p,
+          .guide-section li,
+          .setting-description,
+          .shortcuts-list li {
+            color: #e0e0e0;
+          }
+          
+          .setting-label span {
+            color: #e0e0e0;
+          }
+          
+          .setting-placeholder {
+            background-color: #333;
+            color: #ccc;
+          }
+          
+          .guide-section strong,
+          .shortcuts-list strong {
+            color: #fff;
+          }
+          
+          /* ... existing mobile styles ... */
+        }
+        
+        /* Prevent body scrolling when overlay is open */
+        body.overlay-open {
+          overflow: hidden;
+        }
+        
+        /* Guide specific styles */
+        .guide-section {
+          margin-bottom: 2rem;
+          text-align: left;
+        }
+        
+        .guide-section h3 {
+          margin-top: 0;
+          color: #1976d2;
+          border-bottom: 1px solid #eee;
+          padding-bottom: 0.5rem;
+          margin-bottom: 1rem;
+          text-align: left;
+        }
+        
+        .guide-section h4 {
+          margin-top: 1.5rem;
+          margin-bottom: 0.5rem;
+          color: #333;
+          text-align: left;
+        }
+        
+        .guide-section p {
+          margin-bottom: 1rem;
+          line-height: 1.5;
+          color: #333; /* Ensure text is dark */
+          text-align: left;
+        }
+        
+        .guide-section ul, .guide-section ol {
+          padding-left: 1.5rem;
+          margin-bottom: 1rem;
+          text-align: left;
+        }
+        
+        .guide-section li {
+          margin-bottom: 0.5rem;
+          line-height: 1.5;
+          color: #333; /* Ensure text is dark */
+          text-align: left;
+        }
+        
+        .guide-section strong {
+          font-weight: 600;
+          color: #333;
+        }
+        
+        /* Settings specific styles */
+        .settings-section {
+          margin-bottom: 2rem;
+          padding-bottom: 1rem;
+          border-bottom: 1px solid #eee;
+          text-align: left;
+        }
+        
+        .settings-section:last-child {
+          border-bottom: none;
+        }
+        
+        .settings-section h3 {
+          margin-top: 0;
+          color: #1976d2;
+          margin-bottom: 1rem;
+        }
+        
+        .setting-group {
+          margin-bottom: 1.5rem;
+        }
+        
+        .setting-label {
+          display: block;
+          margin-bottom: 0.5rem;
+        }
+        
+        .setting-label span {
+          font-weight: 600;
+          color: #333;
+          display: block;
+          margin-bottom: 0.25rem;
+        }
+        
+        .setting-description {
+          font-size: 0.9rem;
+          color: #666;
+          margin-bottom: 0.5rem;
+        }
+        
+        .setting-placeholder {
+          background-color: #f5f5f5;
+          padding: 0.75rem;
+          border-radius: 4px;
+          font-size: 0.9rem;
+          color: #666;
+          font-style: italic;
+        }
+        
+        .shortcuts-list {
+          list-style-type: none;
+          padding-left: 0;
+          margin-bottom: 1rem;
+        }
+        
+        .shortcuts-list li {
+          margin-bottom: 0.5rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .shortcuts-list strong {
+          margin-right: 1rem;
         }
       `}</style>
     </div>
