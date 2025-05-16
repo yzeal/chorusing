@@ -1,8 +1,31 @@
 # User Guide Notes
 
+## Purpose of the Chorusing Trainer
+
+The purpose of this tool is to provide an easy way to do high repetition chorusing practice.
+Chorusing in language learning is the practice of learners repeating words or phrases in unison with a native speaker or instructor.
+It's especially effective for developing fluency and natural speech in early stages of language acquisition, but will be helpful at any stage.
+
+### Benefits
+- Reinforces correct pronunciation, rhythm, and intonation
+- Builds muscle memory for speech patterns
+- Reduces anxiety about speaking (supposedly)
+- Aids listening and imitation skills through synchronized repetition
+
+### The Method
+- Play a word, phrase or short sentence spoken by a native speaker in a loop
+- Just listen a few times, really focus on what you hear (sounds, rhythm, pitch)
+- Then say it out loud at exactly the same time as the native speaker
+- Repeat this 10, 50, 100 times until you can match their rhythm perfectly
+- Record yourself and see if your pitch curve shape matches that of the native speaker
+- Repeat, repeat, repeat until you get it as perfect as you feel you can for that day
+- Only then move on to another word, phrase or short sentence
+- Do this daily for a few weeks and see
+
+
 ## Recording Length Recommendations
 
-For the best experience with the Pitch Accent Training app, consider these guidelines for your recordings:
+For the best experience with the Chorusing Training app, consider these guidelines for your recordings:
 
 ### Optimal Recording Length
 - **Ideal Length**: 5-30 seconds
@@ -24,6 +47,15 @@ For the best experience with the Pitch Accent Training app, consider these guide
 
 ### Technical Considerations
 While there is no hard limit on recording length, browser performance may degrade with very long recordings, especially on mobile devices. The app has been optimized for recordings in the 5-30 second range, which is ideal for focused practice. Loading large video files on mobile devices can likewise be problematic. Consider editing large files or making short screen recordings of segments you want to practice.
+
+### Caution!
+On the iPhone, starting a recording inside a web browser will cause all audio output to use the ringer's audio level. This can by default be very loud!
+
+To gain control over the ringer level on iPohne, you can:
+- **Open Settings**: Find and tap the Settings app on your iPhone's home screen
+- **Go to Sounds & Haptics**: Scroll down and tap on "Sounds & Haptics"
+- **Adjust Ringer Volume**: In the "Ringer and Alerts" section, you'll see a slider. Drag the slider left or right to adjust the ringer volume to your desired level
+- **Change with Buttons (Optional)**: If you prefer to use the volume buttons, you can enable "Change with Buttons" by toggling the switch to the right
 
 # Japanese Pitch Accent Visualization - User Guide
 
