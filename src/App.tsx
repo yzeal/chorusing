@@ -182,6 +182,9 @@ const App: React.FC = () => {
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
   const [userAudioUrl, setUserAudioUrl] = useState<string | undefined>(undefined)
 
+  // Add state for subtitle font size (default to 2em which is double the normal size)
+  const [subtitleFontSize, setSubtitleFontSize] = useState<number>(2);
+
   // Native pitch data
   const [nativePitchData, setNativePitchData] = useState<{ times: number[]; pitches: (number | null)[] }>({ times: [], pitches: [] })
   const [nativeMediaUrl, setNativeMediaUrl] = useState<string | null>(null)
@@ -3321,10 +3324,22 @@ const resetPitchDetectionSettings = useCallback(() => {
                   </div>
                   <div className="setting-group">
                     <label className="setting-label">
-                      <span>Pitch Detection Range</span>
-                      <div className="setting-description">Configure the minimum and maximum pitch detection thresholds</div>
-                    </label>
-                  <div className="setting-controls">
+                      <span>Subtitle Font Size</span>
+                      <div className="setting-description">Adjust the size of the subtitles (1 = normal size)</div>
+                      </label>
+                      <div className="setting-controls">
+                        <div className="setting-control-row">
+                          <input type="range" min="0.5" max="4" step="0.1" value={subtitleFontSize} onChange={(e) => setSubtitleFontSize(Number(e.target.value))} className="settings-slider"/>
+                          <span className="slider-value">{subtitleFontSize}x</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="setting-group">
+                      <label className="setting-label">
+                        <span>Pitch Detection Range</span>
+                        <div className="setting-description">Configure the minimum and maximum pitch detection thresholds</div>
+                      </label>
+                    <div className="setting-controls">
                     <div className="setting-control-row">
                       <label>Minimum Pitch (Hz):</label>
                       <input 
@@ -3404,6 +3419,14 @@ const resetPitchDetectionSettings = useCallback(() => {
         .pitch-graph-container {
           touch-action: pinch-zoom pan-x pan-y;
         }
+
+        /* Subtitle styling */
+        video::cue {
+          font-size: ${subtitleFontSize}em;
+          background-color: rgba(0, 0, 0, 0.8);
+          color: white;
+        }
+
         
         /* App header with navigation buttons */
         .app-header {
