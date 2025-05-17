@@ -487,22 +487,27 @@ const App: React.FC = () => {
       try {
         appLog('[App] Initializing PitchDataManager with audio file:', file.name);
         await pitchManager.current.initialize(file);
+
+        // For long videos, start with empty data
+        const initialData = pitchManager.current.isLongVideoFile() ? 
+          { times: [], pitches: [] } : 
+          pitchManager.current.getPitchDataForTimeRange(0, pitchManager.current.getTotalDuration());
         
-        // Get initial pitch data
-        const initialData = pitchManager.current.getPitchDataForTimeRange(0, 30);
+        // Only apply smoothing for short videos
+        if (!pitchManager.current.isLongVideoFile()) {
+          const smoothingWindowSize = separateSmoothingSettings ? 
+            getWindowSizeFromSettings(smoothingStyle, nativeSmoothingLevel) : 
+            getWindowSizeFromSettings(smoothingStyle, smoothingLevel);
         
-        // Apply enhanced smoothing with configurable settings
-        const smoothingWindowSize = separateSmoothingSettings ? 
-          getWindowSizeFromSettings(smoothingStyle, nativeSmoothingLevel) : 
-          getWindowSizeFromSettings(smoothingStyle, smoothingLevel);
-        
-        const enhancedData = {
-          times: initialData.times,
-          pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
-        };
-        
-        appLog('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
-        setNativePitchData(enhancedData);
+          const enhancedData = {
+            times: initialData.times,
+            pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
+          };
+          appLog('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
+          setNativePitchData(enhancedData);
+        } else {
+          setNativePitchData(initialData);
+        }
       } catch (error) {
         appError('Error processing audio:', error);
         setNativePitchData({ times: [], pitches: [] });
@@ -512,22 +517,27 @@ const App: React.FC = () => {
       try {
         appLog('[App] Initializing PitchDataManager with video file:', file.name);
         await pitchManager.current.initialize(file);
-        
-        // Get initial pitch data
-        const initialData = pitchManager.current.getPitchDataForTimeRange(0, 30);
-        
-        // Apply enhanced smoothing with configurable settings
-        const smoothingWindowSize = separateSmoothingSettings ? 
-          getWindowSizeFromSettings(smoothingStyle, nativeSmoothingLevel) : 
-          getWindowSizeFromSettings(smoothingStyle, smoothingLevel);
-        
-        const enhancedData = {
-          times: initialData.times,
-          pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
-        };
-        
-        appLog('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
-        setNativePitchData(enhancedData);
+
+        // For long videos, start with empty data
+        const initialData = pitchManager.current.isLongVideoFile() ? 
+          { times: [], pitches: [] } : 
+          pitchManager.current.getPitchDataForTimeRange(0, pitchManager.current.getTotalDuration());
+
+        // Only apply smoothing for short videos
+        if (!pitchManager.current.isLongVideoFile()) {
+          const smoothingWindowSize = separateSmoothingSettings ? 
+            getWindowSizeFromSettings(smoothingStyle, nativeSmoothingLevel) : 
+            getWindowSizeFromSettings(smoothingStyle, smoothingLevel);
+
+          const enhancedData = {
+            times: initialData.times,
+            pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
+          };
+          appLog('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
+          setNativePitchData(enhancedData);
+        } else {
+          setNativePitchData(initialData);
+        }
       } catch (error) {
         appError('Error processing video:', error);
         setNativePitchData({ times: [], pitches: [] });
@@ -652,22 +662,27 @@ const App: React.FC = () => {
       try {
         appLog('[App] Initializing PitchDataManager with audio file:', file.name);
         await pitchManager.current.initialize(file);
-        
-        // Get initial pitch data
-        const initialData = pitchManager.current.getPitchDataForTimeRange(0, 30);
-        
-        // Apply enhanced smoothing with configurable settings
-        const smoothingWindowSize = separateSmoothingSettings ? 
-          getWindowSizeFromSettings(smoothingStyle, nativeSmoothingLevel) : 
-          getWindowSizeFromSettings(smoothingStyle, smoothingLevel);
-        
-        const enhancedData = {
-          times: initialData.times,
-          pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
-        };
-        
-        appLog('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
-        setNativePitchData(enhancedData);
+
+        // For long videos, start with empty data
+        const initialData = pitchManager.current.isLongVideoFile() ? 
+          { times: [], pitches: [] } : 
+          pitchManager.current.getPitchDataForTimeRange(0, pitchManager.current.getTotalDuration());
+
+        // Only apply smoothing for short videos
+        if (!pitchManager.current.isLongVideoFile()) {
+          const smoothingWindowSize = separateSmoothingSettings ? 
+            getWindowSizeFromSettings(smoothingStyle, nativeSmoothingLevel) : 
+            getWindowSizeFromSettings(smoothingStyle, smoothingLevel);
+
+          const enhancedData = {
+            times: initialData.times,
+            pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
+          };
+          appLog('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
+          setNativePitchData(enhancedData);
+        } else {
+          setNativePitchData(initialData);
+        }
       } catch (error) {
         appError('Error processing audio:', error);
         setNativePitchData({ times: [], pitches: [] });
@@ -677,22 +692,27 @@ const App: React.FC = () => {
       try {
         appLog('[App] Initializing PitchDataManager with video file:', file.name);
         await pitchManager.current.initialize(file);
-        
-        // Get initial pitch data
-        const initialData = pitchManager.current.getPitchDataForTimeRange(0, 30);
-        
-        // Apply enhanced smoothing with configurable settings
-        const smoothingWindowSize = separateSmoothingSettings ? 
-          getWindowSizeFromSettings(smoothingStyle, nativeSmoothingLevel) : 
-          getWindowSizeFromSettings(smoothingStyle, smoothingLevel);
-        
-        const enhancedData = {
-          times: initialData.times,
-          pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
-        };
-        
-        appLog('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
-        setNativePitchData(enhancedData);
+
+        // For long videos, start with empty data
+        const initialData = pitchManager.current.isLongVideoFile() ? 
+          { times: [], pitches: [] } : 
+          pitchManager.current.getPitchDataForTimeRange(0, pitchManager.current.getTotalDuration());
+
+        // Only apply smoothing for short videos
+        if (!pitchManager.current.isLongVideoFile()) {
+          const smoothingWindowSize = separateSmoothingSettings ? 
+            getWindowSizeFromSettings(smoothingStyle, nativeSmoothingLevel) : 
+            getWindowSizeFromSettings(smoothingStyle, smoothingLevel);
+
+          const enhancedData = {
+            times: initialData.times,
+            pitches: smoothPitch(initialData.pitches, smoothingWindowSize)
+          };
+          appLog('[App] Initial pitch data loaded and smoothed with window size:', smoothingWindowSize);
+          setNativePitchData(enhancedData);
+        } else {
+          setNativePitchData(initialData);
+        }
       } catch (error) {
         appError('Error processing video:', error);
         setNativePitchData({ times: [], pitches: [] });
@@ -837,16 +857,13 @@ const App: React.FC = () => {
     }
   }, [loopStart, loopEnd]);
 
-  // Add ref to track initial setup
-  const initialSetupDoneRef = useRef(false);
-
 
   const handleViewChange = useCallback(async (startTime: number, endTime: number, preservedLoopStart?: number, preservedLoopEnd?: number) => {
     // Show loading state while we get the pitch data
     setIsLoadingPitchData(true);
     
     try {
-      // KEEP: Loop region preservation logic
+      // Loop region preservation logic
       const userSetLoop = userSetLoopRef.current;
       const hasPreservedValues = preservedLoopStart !== undefined && preservedLoopEnd !== undefined;
       
@@ -856,7 +873,7 @@ const App: React.FC = () => {
           { start: preservedLoopStart!, end: preservedLoopEnd! } : 
           { start: loopStart, end: loopEnd };
   
-      // KEEP: Loop region preservation for non-new files
+      // Loop region preservation for non-new files
       if (!isLoadingNewFileRef.current) {
         const currentLoopStart = loopRegionToRestore.start;
         const currentLoopEnd = loopRegionToRestore.end;
@@ -875,55 +892,6 @@ const App: React.FC = () => {
       setIsLoadingPitchData(false);
     }
   }, [loopStart, loopEnd]);
-  
-  // DELETE: Remove all of these parts:
-  // - All references to isJumpingToPlaybackRef
-  // - All setTimeout calls for loading states
-  // - All setIsLoadingPitchData calls
-  // - All loadSegmentsForTimeRange calls
-  // - All verification checks for view range after loading
-  // - All error handling related to progressive loading
-
-  // Consolidate initial view setup into a single effect
-  React.useEffect(() => {
-
-
-    if (nativeChartInstance && nativePitchData.times.length > 0 && !initialSetupDoneRef.current) {
-      const duration = nativePitchData.times[nativePitchData.times.length - 1];
-      
-      if (duration > 30) {
-        const initialViewDuration = 10;
-        appLog('[App] Setting initial view range for long video:', {
-          duration,
-          initialViewDuration,
-          isInitialSetup: !initialSetupDoneRef.current
-        });
-        
-
-          // Update zoom state ref directly
-        if (nativeChartInstance.options.scales?.x) {
-          nativeChartInstance.options.scales.x.min = 0;
-          nativeChartInstance.options.scales.x.max = initialViewDuration;
-            
-          // Also update the zoom state ref in the PitchGraph component
-          const chartWithZoomState = nativeChartInstance as unknown as { zoomStateRef: { current: { min: number; max: number } } };
-          if (chartWithZoomState.zoomStateRef) {
-            chartWithZoomState.zoomStateRef.current = { min: 0, max: initialViewDuration };
-          }
-            
-          // Force the chart to update its layout
-          nativeChartInstance.update('none');
-            
-          // Notify parent of view change
-          handleViewChange(0, initialViewDuration);
-        }
-        
-        
-        // Always mark setup as done to prevent future resets
-        initialSetupDoneRef.current = true;
-      }
-    }
-  }, [nativeChartInstance, nativePitchData.times, handleViewChange]);
 
   // Modify onLoopChange to store the user-set values in the ref
   const onLoopChangeHandler = (start: number, end: number) => {

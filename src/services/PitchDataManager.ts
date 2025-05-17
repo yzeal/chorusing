@@ -71,6 +71,7 @@ export class PitchDataManager {
   private audioContext: AudioContext;
   private currentFile: File | null = null;
   private totalDuration: number = 0;
+  private isLongVideo: boolean = false;
 
   constructor() {
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -102,10 +103,14 @@ export class PitchDataManager {
     // Now initialize with the new file
     this.currentFile = file;
     this.totalDuration = await this.getFileDuration(file);
+    this.isLongVideo = this.totalDuration > 30;
     
-    // Process the entire file
-    const fullPitchData = await this.processEntireFile(this.currentFile);
-    this.pitchData = fullPitchData;
+    // For short videos, process the entire file
+    if (!this.isLongVideo) {
+      const fullPitchData = await this.processEntireFile(file);
+      this.pitchData = fullPitchData;
+    }
+    // For long videos, don't process anything initially
   }
 
   private async processEntireFile(file: File): Promise<PitchData> {
@@ -173,6 +178,86 @@ export class PitchDataManager {
     const enhancedSmooth = smoothPitch(medianSmoothed, 25);
     
     return { times, pitches: enhancedSmooth };
+  }
+
+  async extractSegment(currentTime: number): Promise<void> {
+    if (!this.currentFile || !this.isLongVideo) return;
+
+    // Calculate segment bounds
+    let startTime = Math.max(0, currentTime - 2);
+    let endTime = Math.min(this.totalDuration, currentTime + 18);
+
+    // Adjust for edge cases
+    if (startTime === 0) {
+      // Near start: extend forward
+      endTime = Math.min(this.totalDuration, 20);
+    } else if (endTime === this.totalDuration) {
+      // Near end: extend backward
+      startTime = Math.max(0, this.totalDuration - 20);
+    }
+
+    // Clear previous data
+    this.pitchData = { times: [], pitches: [] };
+
+    // Process the segment
+    const file = this.currentFile;
+    const arrayBuffer = await file.arrayBuffer();
+    const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+    const channelData = audioBuffer.getChannelData(0);
+    const sampleRate = audioBuffer.sampleRate;
+
+    // Calculate sample indices for this segment
+    const startSample = Math.floor(startTime * sampleRate);
+    const endSample = Math.floor(endTime * sampleRate);
+    
+    const frameSize = 2048;
+    const hopSize = 256;
+    const detector = PitchDetector.forFloat32Array(frameSize);
+    const pitches: (number | null)[] = [];
+    const times: number[] = [];
+
+    // Process all samples in this segment
+    for (let i = startSample; i < endSample; i += hopSize) {
+      let frame: Float32Array;
+      
+      if (i + frameSize > endSample) {
+        // Create padded frame for end of segment
+        frame = new Float32Array(frameSize);
+        const remainingSamples = endSample - i;
+        frame.set(channelData.slice(i, endSample));
+        const lastValue = channelData[endSample - 1] || 0;
+        for (let j = remainingSamples; j < frameSize; j++) {
+          frame[j] = lastValue;
+        }
+      } else {
+        frame = channelData.slice(i, i + frameSize);
+      }
+
+      const [pitch, clarity] = detector.findPitch(frame, sampleRate);
+      if (pitch >= MIN_PITCH && pitch <= MAX_PITCH && clarity >= MIN_CLARITY) {
+        pitches.push(pitch);
+      } else {
+        pitches.push(null);
+      }
+      times.push(i / sampleRate);
+    }
+
+    // Apply standard median filter first
+    const medianSmoothed = medianFilter(pitches, MEDIAN_FILTER_SIZE);
+    
+    // Then apply enhanced smoothing for more simplified curves
+    const enhancedSmooth = smoothPitch(medianSmoothed, 25);
+    
+    // Update the segment data
+    this.pitchData = {
+      times,
+      pitches: enhancedSmooth
+    };
+  }
+
+  // Add method to check if this is a long video
+  isLongVideoFile(): boolean {
+    return this.isLongVideo;
   }
 
   getPitchDataForTimeRange(startTime: number, endTime: number): PitchData {
