@@ -202,6 +202,64 @@ const App: React.FC = () => {
   const userAudioRef = useRef<HTMLAudioElement>(null);
   const userAudioPlayingRef = useRef(false);
 
+  // Add state for subtitle
+  const [currentSubtitle, setCurrentSubtitle] = useState<{
+    file: File | undefined;
+    fileName: string | undefined;
+  }>({
+    file: undefined,
+    fileName: undefined
+  });
+
+  // Add state for subtitle URL
+  const [subtitleUrl, setSubtitleUrl] = useState<string | undefined>(undefined);
+
+  const subtitleInputRef = useRef<HTMLInputElement>(null);
+
+  // Function to handle subtitle file loading
+  const handleSubtitleLoad = async (file: File): Promise<void> => {
+    try {
+      const text = await file.text();
+      appLog('Loaded subtitle file:', text);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        appError('Error loading subtitle file:', error.message);
+      } else {
+        appError('Error loading subtitle file:', String(error));
+      }
+    }
+  };
+
+  // Update subtitle file change handler
+  const handleSubtitleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Clean up old URL if it exists
+      if (subtitleUrl) {
+        URL.revokeObjectURL(subtitleUrl);
+      }
+      // Create new URL
+      const newUrl = URL.createObjectURL(file);
+      setSubtitleUrl(newUrl);
+      setCurrentSubtitle({
+        file,
+        fileName: file.name
+      });
+      void handleSubtitleLoad(file);
+    }
+  };
+
+  // Clean up subtitle URL when component unmounts
+  useEffect(() => {
+    return () => {
+      if (subtitleUrl) {
+        URL.revokeObjectURL(subtitleUrl);
+      }
+    };
+  }, [subtitleUrl]);
+
+
+
   const [nativeChartInstance, setNativeChartInstance] = useState<ExtendedChart | null>(null);
 
   // Add drag state
@@ -2291,44 +2349,7 @@ const resetPitchDetectionSettings = useCallback(() => {
     setKeyboardShortcuts(defaults);
   }, []);
 
-  // Add state for subtitle
-  const [currentSubtitle, setCurrentSubtitle] = useState<{
-    file: File | null;
-    fileName: string | null;
-  }>({
-    file: null,
-    fileName: null
-  });
-
-  const subtitleInputRef = useRef<HTMLInputElement>(null);
-
-  // Function to handle subtitle file loading
-  const handleSubtitleLoad = async (file: File): Promise<void> => {
-    try {
-      const text = await file.text();
-      // For now we just log the subtitle content
-      // TODO: Implement subtitle parsing and display
-      appLog('Loaded subtitle file:', text);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        appError('Error loading subtitle file:', error.message);
-      } else {
-        appError('Error loading subtitle file:', String(error));
-      }
-    }
-  };
-
-  // Update subtitle file change handler
-  const handleSubtitleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setCurrentSubtitle({
-        file,
-        fileName: file.name
-      });
-      void handleSubtitleLoad(file);
-    }
-  };
+  
 
   return (
     <div 
@@ -2442,7 +2463,17 @@ const resetPitchDetectionSettings = useCallback(() => {
                   marginBottom: '0.75rem',
                   maxWidth: '100%'
                 }}
-              />
+              >
+                {subtitleUrl && (
+                  <track
+                    kind="subtitles"
+                    src={subtitleUrl}
+                    srcLang="ja"
+                    label="Japanese"
+                    default
+                  />
+                )}
+              </video>
             )}
             {/* Loop selection and delay controls (moved above the curve) */}
             {nativePitchData.times.length > 0 && (
@@ -3272,7 +3303,27 @@ const resetPitchDetectionSettings = useCallback(() => {
               
               
               
-                              <div className="settings-section">                  <h3>Advanced Settings</h3>                  <div className="setting-group">                    <label className="setting-label">                      <span>Subtitle Upload</span>                      <div className="setting-description">                        Upload a subtitle file for the native recording (only *.vtt format supported)                      </div>                    </label>                    <div className="setting-controls">                      <input                        type="file"                        accept=".vtt"                        style={{ display: 'none' }}                        ref={subtitleInputRef}                        onChange={handleSubtitleChange}                      />                      <div className="setting-control-row subtitle-controls">                        <button                          className="settings-button"                          onClick={() => subtitleInputRef.current?.click()}                          disabled={!nativeMediaUrl}                        >                          Load Subtitle                        </button>                        <button                          className="settings-button"                          onClick={() => setCurrentSubtitle({ file: null, fileName: null })}                          disabled={!currentSubtitle.file}                        >                          Clear Subtitle                        </button>                      </div>                      {currentSubtitle.fileName && (                        <div className="subtitle-info">                          Current subtitle: {currentSubtitle.fileName}                        </div>                      )}                    </div>                  </div>                  <div className="setting-group">                    <label className="setting-label">                      <span>Pitch Detection Range</span>                      <div className="setting-description">                        Configure the minimum and maximum pitch detection thresholds                      </div>                    </label>
+                <div className="settings-section">                  
+                  <h3>Advanced Settings</h3>                  
+                  <div className="setting-group">                    
+                    <label className="setting-label">                      
+                      <span>Subtitle Upload</span>                      
+                      <div className="setting-description">Upload a subtitle file for the native recording (only *.vtt format supported)</div>
+                    </label>
+                    <div className="setting-controls">
+                      <input type="file"  accept=".vtt" style={{ display: 'none' }} ref={subtitleInputRef} onChange={handleSubtitleChange}/>
+                      <div className="setting-control-row subtitle-controls">
+                        <button className="settings-button" onClick={() => subtitleInputRef.current?.click()} disabled={!nativeMediaUrl}>Load Subtitle</button>                       
+                        <button  className="settings-button" onClick={() => setCurrentSubtitle({ file: undefined, fileName: undefined })} disabled={!currentSubtitle.file}>Clear Subtitle</button>                      
+                      </div>
+                      {currentSubtitle.fileName && (<div className="subtitle-info"> Current subtitle: {currentSubtitle.fileName}</div>)}
+                    </div>
+                  </div>
+                  <div className="setting-group">
+                    <label className="setting-label">
+                      <span>Pitch Detection Range</span>
+                      <div className="setting-description">Configure the minimum and maximum pitch detection thresholds</div>
+                    </label>
                   <div className="setting-controls">
                     <div className="setting-control-row">
                       <label>Minimum Pitch (Hz):</label>
