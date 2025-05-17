@@ -249,7 +249,8 @@ export class PitchDataManager {
       } else {
         pitches.push(null);
       }
-      times.push(i / sampleRate);
+      // Store actual time relative to video start
+      times.push(startTime + (i - startSample) / sampleRate);
     }
 
     // Apply standard median filter first

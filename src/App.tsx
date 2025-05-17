@@ -2363,12 +2363,10 @@ const resetPitchDetectionSettings = useCallback(() => {
                 playbackTime={nativePlaybackTime}
                 onLoopChange={onLoopChangeHandler}
                 onViewChange={onViewChangeHandler}
-                totalDuration={pitchManager.current.isLongVideoFile() ? 
-                  (currentSegment?.endTime || 0) - (currentSegment?.startTime || 0) : 
+                totalDuration={pitchManager.current.isLongVideoFile() && currentSegment ? 
+                  currentSegment.endTime - currentSegment.startTime : 
                   pitchManager.current.getTotalDuration()}
-                initialViewDuration={pitchManager.current.isLongVideoFile() ? 
-                  (currentSegment?.endTime || 0) - (currentSegment?.startTime || 0) : 
-                  undefined}
+                initialViewDuration={undefined}
                 yAxisConfig={{
                   beginAtZero: false,
                   suggestedMin: loopYFit?.[0],
