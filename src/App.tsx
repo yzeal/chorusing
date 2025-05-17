@@ -248,6 +248,22 @@ const App: React.FC = () => {
         file,
         fileName: file.name
       });
+      
+      // Force video reload and enable track
+      const video = nativeVideoRef.current;
+      if (video) {
+        const currentTime = video.currentTime;
+        video.load();
+        // Wait for video to reload before enabling track
+        video.onloadeddata = () => {
+          video.currentTime = currentTime;
+          // Enable the text track
+          if (video.textTracks[0]) {
+            video.textTracks[0].mode = 'showing';
+          }
+        };
+      }
+      
       void handleSubtitleLoad(file);
     }
   };
@@ -3303,37 +3319,10 @@ const resetPitchDetectionSettings = useCallback(() => {
                   </div>
                 </div>
               )}
-              
-              
-              
+            
                 <div className="settings-section">                  
                   <h3>Advanced Settings</h3>                  
-                  <div className="setting-group">                    
-                    <label className="setting-label">                      
-                      <span>Subtitle Upload</span>                      
-                      <div className="setting-description">Upload a subtitle file for the native recording (only *.vtt format supported)</div>
-                    </label>
-                    <div className="setting-controls">
-                      <input type="file"  accept=".vtt" style={{ display: 'none' }} ref={subtitleInputRef} onChange={handleSubtitleChange}/>
-                      <div className="setting-control-row subtitle-controls">
-                        <button className="settings-button" onClick={() => subtitleInputRef.current?.click()} disabled={!nativeMediaUrl}>Load Subtitle</button>                       
-                        <button  className="settings-button" onClick={() => setCurrentSubtitle({ file: undefined, fileName: undefined })} disabled={!currentSubtitle.file}>Clear Subtitle</button>                      
-                      </div>
-                      {currentSubtitle.fileName && (<div className="subtitle-info"> Current subtitle: {currentSubtitle.fileName}</div>)}
-                    </div>
-                  </div>
-                  <div className="setting-group">
-                    <label className="setting-label">
-                      <span>Subtitle Font Size</span>
-                      <div className="setting-description">Adjust the size of the subtitles (1 = normal size)</div>
-                      </label>
-                      <div className="setting-controls">
-                        <div className="setting-control-row">
-                          <input type="range" min="0.5" max="4" step="0.1" value={subtitleFontSize} onChange={(e) => setSubtitleFontSize(Number(e.target.value))} className="settings-slider"/>
-                          <span className="slider-value">{subtitleFontSize}x</span>
-                        </div>
-                      </div>
-                    </div>
+                  
                     <div className="setting-group">
                       <label className="setting-label">
                         <span>Pitch Detection Range</span>
@@ -3398,6 +3387,48 @@ const resetPitchDetectionSettings = useCallback(() => {
                       >
                         Reset to Defaults
                       </button>
+                    </div>
+                    <div className="setting-group">                    
+                    <label className="setting-label">                      
+                      <span>Subtitle Upload</span>                      
+                      <div className="setting-description">Upload a subtitle file for the native recording (only *.vtt format supported)</div>
+                    </label>
+                    <div className="setting-controls">
+                      <input type="file"  accept=".vtt" style={{ display: 'none' }} ref={subtitleInputRef} onChange={handleSubtitleChange}/>
+                      <div className="setting-control-row subtitle-controls">
+                        <button className="settings-button" onClick={() => subtitleInputRef.current?.click()} disabled={!nativeMediaUrl}>Load Subtitle</button>                       
+                        <button  className="settings-button" onClick={() => {
+                          // Clean up old URL if it exists
+                          if (subtitleUrl) {
+                            URL.revokeObjectURL(subtitleUrl);
+                          }
+                          setSubtitleUrl(undefined);
+                          setCurrentSubtitle({ file: undefined, fileName: undefined });
+                          
+                          // Force video reload to clear the track
+                          const video = nativeVideoRef.current;
+                          if (video) {
+                            const currentTime = video.currentTime;
+                            video.load();
+                            video.currentTime = currentTime;
+                          }
+                        }} 
+                        disabled={!currentSubtitle.file}>Clear Subtitle</button>                      
+                      </div>
+                      {currentSubtitle.fileName && (<div className="subtitle-info"> Current subtitle: {currentSubtitle.fileName}</div>)}
+                    </div>
+                  </div>
+                  <div className="setting-group">
+                    <label className="setting-label">
+                      <span>Subtitle Font Size</span>
+                      <div className="setting-description">Adjust the size of the subtitles (1 = normal size)</div>
+                      </label>
+                      <div className="setting-controls">
+                        <div className="setting-control-row">
+                          <input type="range" min="0.5" max="4" step="0.1" value={subtitleFontSize} onChange={(e) => setSubtitleFontSize(Number(e.target.value))} className="settings-slider"/>
+                          <span className="slider-value">{subtitleFontSize}x</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
