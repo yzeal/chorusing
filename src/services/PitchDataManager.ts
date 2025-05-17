@@ -203,6 +203,14 @@ export class PitchDataManager {
       startTime = Math.max(0, this.totalDuration - 20);
     }
 
+    // Always log segment boundaries
+    console.log('[PitchDataManager] Extracting segment:', {
+      currentTime,
+      startTime,
+      endTime,
+      duration: endTime - startTime
+    });
+
     // Store current segment boundaries
     this.currentSegment = { startTime, endTime };
 
@@ -220,6 +228,13 @@ export class PitchDataManager {
     const startSample = Math.floor(startTime * sampleRate);
     const endSample = Math.floor(endTime * sampleRate);
     
+    console.log('[PitchDataManager] Processing samples:', {
+      sampleRate,
+      startSample,
+      endSample,
+      expectedDuration: (endSample - startSample) / sampleRate
+    });
+
     const frameSize = 2048;
     const hopSize = 256;
     const detector = PitchDetector.forFloat32Array(frameSize);
@@ -259,6 +274,16 @@ export class PitchDataManager {
     // Then apply enhanced smoothing for more simplified curves
     const enhancedSmooth = smoothPitch(medianSmoothed, 25);
     
+    // Log the final time range
+    console.log('[PitchDataManager] Processed segment data:', {
+      timePoints: times.length,
+      timeRange: times.length > 0 ? {
+        first: times[0],
+        last: times[times.length - 1],
+        span: times[times.length - 1] - times[0]
+      } : 'no data'
+    });
+
     // Update the segment data
     this.pitchData = {
       times,

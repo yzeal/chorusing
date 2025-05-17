@@ -2086,13 +2086,30 @@ const resetPitchDetectionSettings = useCallback(() => {
     const media = getActiveMediaElement() as HTMLVideoElement | null;
     if (!media) return;
 
+    console.log('[App] Starting pitch extraction:', {
+      currentTime: media.currentTime,
+      duration: media.duration
+    });
+
     setIsExtractingPitch(true);
     try {
       await pitchManager.current.extractSegment(media.currentTime);
+      const segment = pitchManager.current.getCurrentSegment();
+      console.log('[App] Segment extracted:', {
+        segment,
+        currentTime: media.currentTime
+      });
+
       const extractedData = pitchManager.current.getPitchDataForTimeRange(0, pitchManager.current.getTotalDuration());
+      console.log('[App] Got pitch data:', {
+        dataPoints: extractedData.times.length,
+        timeRange: extractedData.times.length > 0 ? {
+          first: extractedData.times[0],
+          last: extractedData.times[extractedData.times.length - 1]
+        } : 'no data'
+      });
       
       // Get current segment boundaries
-      const segment = pitchManager.current.getCurrentSegment();
       setCurrentSegment(segment);
       
       // Apply smoothing to the extracted segment
@@ -2105,9 +2122,15 @@ const resetPitchDetectionSettings = useCallback(() => {
         pitches: smoothPitch(extractedData.pitches, smoothingWindowSize)
       };
       
+      console.log('[App] Setting pitch data with time range:', {
+        first: enhancedData.times[0],
+        last: enhancedData.times[enhancedData.times.length - 1],
+        points: enhancedData.times.length
+      });
+      
       setNativePitchData(enhancedData);
     } catch (error) {
-      appError('Error extracting pitch data:', error);
+      console.error('[App] Error extracting pitch data:', error);
     } finally {
       setIsExtractingPitch(false);
     }
@@ -3048,7 +3071,7 @@ const resetPitchDetectionSettings = useCallback(() => {
               )}
             
                 <div className="settings-section">                  
-                  <h3>Advanced Settings</h3>                  
+                  <h3>Advanced Settings</h3>
                   
                     <div className="setting-group">
                       <label className="setting-label">
