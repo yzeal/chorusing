@@ -2291,6 +2291,45 @@ const resetPitchDetectionSettings = useCallback(() => {
     setKeyboardShortcuts(defaults);
   }, []);
 
+  // Add state for subtitle
+  const [currentSubtitle, setCurrentSubtitle] = useState<{
+    file: File | null;
+    fileName: string | null;
+  }>({
+    file: null,
+    fileName: null
+  });
+
+  const subtitleInputRef = useRef<HTMLInputElement>(null);
+
+  // Function to handle subtitle file loading
+  const handleSubtitleLoad = async (file: File): Promise<void> => {
+    try {
+      const text = await file.text();
+      // For now we just log the subtitle content
+      // TODO: Implement subtitle parsing and display
+      appLog('Loaded subtitle file:', text);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        appError('Error loading subtitle file:', error.message);
+      } else {
+        appError('Error loading subtitle file:', String(error));
+      }
+    }
+  };
+
+  // Update subtitle file change handler
+  const handleSubtitleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCurrentSubtitle({
+        file,
+        fileName: file.name
+      });
+      void handleSubtitleLoad(file);
+    }
+  };
+
   return (
     <div 
       className="app-container"
@@ -3233,15 +3272,7 @@ const resetPitchDetectionSettings = useCallback(() => {
               
               
               
-              <div className="settings-section">
-                <h3>Advanced Settings</h3>
-                <div className="setting-group">
-                  <label className="setting-label">
-                    <span>Pitch Detection Range</span>
-                    <div className="setting-description">
-                      Configure the minimum and maximum pitch detection thresholds
-                    </div>
-                  </label>
+                              <div className="settings-section">                  <h3>Advanced Settings</h3>                  <div className="setting-group">                    <label className="setting-label">                      <span>Subtitle Upload</span>                      <div className="setting-description">                        Upload a subtitle file for the native recording (only *.vtt format supported)                      </div>                    </label>                    <div className="setting-controls">                      <input                        type="file"                        accept=".vtt"                        style={{ display: 'none' }}                        ref={subtitleInputRef}                        onChange={handleSubtitleChange}                      />                      <div className="setting-control-row subtitle-controls">                        <button                          className="settings-button"                          onClick={() => subtitleInputRef.current?.click()}                          disabled={!nativeMediaUrl}                        >                          Load Subtitle                        </button>                        <button                          className="settings-button"                          onClick={() => setCurrentSubtitle({ file: null, fileName: null })}                          disabled={!currentSubtitle.file}                        >                          Clear Subtitle                        </button>                      </div>                      {currentSubtitle.fileName && (                        <div className="subtitle-info">                          Current subtitle: {currentSubtitle.fileName}                        </div>                      )}                    </div>                  </div>                  <div className="setting-group">                    <label className="setting-label">                      <span>Pitch Detection Range</span>                      <div className="setting-description">                        Configure the minimum and maximum pitch detection thresholds                      </div>                    </label>
                   <div className="setting-controls">
                     <div className="setting-control-row">
                       <label>Minimum Pitch (Hz):</label>
@@ -3981,10 +4012,7 @@ const resetPitchDetectionSettings = useCallback(() => {
             font-size: 1.3rem;
           }
         }
-      `}</style>
-      {/* Add styles for the smoothing controls before the last style closing tag */}
-      <style>{`
-        /* Smoothing Controls Styles */
+              `}</style>        {/* Add styles for the smoothing controls before the last style closing tag */}        <style>{`        /* Subtitle Controls Styles */        .subtitle-controls {          display: flex;          gap: 12px;        }        .subtitle-controls button {          flex: 1;          min-width: 120px;        }        .subtitle-info {          margin-top: 8px;          font-size: 0.9rem;          color: #666;          font-style: italic;        }        @media (max-width: 768px) {          .subtitle-controls {            flex-direction: column;            width: 100%;          }          .subtitle-controls button {            width: 100%;            background-color: #444;            color: #fff;            border-color: #555;            padding: 10px !important;          }          .subtitle-info {            color: #bbb;          }        }        /* Smoothing Controls Styles */
         .setting-control-row {
           margin-bottom: 12px;
           display: flex;
