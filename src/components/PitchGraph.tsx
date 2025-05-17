@@ -105,7 +105,6 @@ export interface PitchGraphWithControlsProps {
       precision?: number;
     };
   };
-  isJumpingToPlayback?: boolean;
 }
 
 export type PitchGraphChartRef = Chart<'line', (number | null)[], number> | null;
@@ -127,7 +126,6 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
     initialViewDuration,
     isUserRecording = false,
     yAxisConfig,
-    isJumpingToPlayback = false,
   } = props;
   
   const chartRef = useRef<Chart<'line', (number | null)[], number> | null>(null);
@@ -559,7 +557,6 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
         isUserInteracting: isUserInteractingRef.current,
         currentZoomState: { ...zoomStateRef.current },
         isUserRecording,
-        isJumpingToPlayback,
         currentView: { min: currentViewMin, max: currentViewMax },
         isInitialLoadOrReset,
         explicitLastPoint: times[times.length - 1]
@@ -581,7 +578,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
     //    - For long native recordings: respect initialViewDuration
     // 3. OR if we need to force a wider view on mobile (0-1s bug fix)
     if (isUserRecording || 
-        (isInitialLoadOrReset && !isJumpingToPlayback && !isUserInteractingRef.current) ||
+        (isInitialLoadOrReset && !isUserInteractingRef.current) ||
         shouldForceWiderInitialView) {
         
       // If we're fixing the 0-1s bug, log it
@@ -611,7 +608,6 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
         initialViewDuration,
         totalDuration: newMax,
         isUserRecording,
-        isJumpingToPlayback,
         timePointsCount: times.length,
         finalRangeMin: updatedRange.min,
         finalRangeMax: updatedRange.max
@@ -619,7 +615,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
       
       // Only if not jumping to playback position and this is an initial load
       // OR if we're forcing a fix for the 0-1s bug
-      if ((!isJumpingToPlayback && isInitialLoadOrReset) || shouldForceWiderInitialView) {
+      if ((isInitialLoadOrReset) || shouldForceWiderInitialView) {
         setTotalDataRange({ min: 0, max: newMax });
         zoomStateRef.current = { ...updatedRange };
         setViewRange(updatedRange);
@@ -645,7 +641,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
       prodLog('[PitchGraph] Skipping initial view setup, already viewing content or user is interacting');
       setTotalDataRange({ min: 0, max: newMax });
     }
-  }, [times, totalDuration, initialViewDuration, isUserRecording, isJumpingToPlayback, isMobile]);
+  }, [times, totalDuration, initialViewDuration, isUserRecording, isMobile]);
 
   // Modify handleWheel to remove artificial view range limits for user recordings
   const handleWheel = (e: WheelEvent) => {

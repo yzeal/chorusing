@@ -285,13 +285,7 @@ const App: React.FC = () => {
   // Add drag state
   const [isDragging, setIsDragging] = useState(false);
 
-  // Add PitchDataManager
-  const pitchManager = useRef(new PitchDataManager({
-    thresholdDuration: 30, // 30 seconds
-    segmentDuration: 10,   // 10 second segments
-    preloadSegments: 1,    // Load one segment ahead
-    maxCachedSegments: 6   // Keep 6 segments in memory
-  }));
+  const pitchManager = useRef(new PitchDataManager());
 
   // Add a ref to track last valid user-set loop region
   const userSetLoopRef = useRef<{start: number, end: number} | null>(null);
@@ -846,167 +840,53 @@ const App: React.FC = () => {
   // Add ref to track initial setup
   const initialSetupDoneRef = useRef(false);
 
-  // Add a ref to track if we're currently executing a jump to playback action
-  const isJumpingToPlaybackRef = useRef(false);
 
-  // Update handleViewChange to show loading indicator and be more careful with playback jumps
   const handleViewChange = useCallback(async (startTime: number, endTime: number, preservedLoopStart?: number, preservedLoopEnd?: number) => {
-    // Clear any pending timeout
-    if (viewChangeTimeoutRef.current) {
-      clearTimeout(viewChangeTimeoutRef.current);
-    }
-
-    // Determine which loop region to restore
-    // First check if user has manually set a loop region
-    const userSetLoop = userSetLoopRef.current;
-    // Then check if we have preserved values from the event
-    const hasPreservedValues = preservedLoopStart !== undefined && preservedLoopEnd !== undefined;
-    
-    // Create a local copy of loop values to restore
-    const loopRegionToRestore = userSetLoop ? 
-      { start: userSetLoop.start, end: userSetLoop.end } : 
-      hasPreservedValues ? 
-        { start: preservedLoopStart!, end: preservedLoopEnd! } : 
-        { start: loopStart, end: loopEnd };
-    
-    appLog('[App] View change requested with loop region:', {
-      startTime,
-      endTime,
-      loopRegionToRestore,
-      currentLoopStart: loopStart,
-      currentLoopEnd: loopEnd,
-      userSetLoop,
-      isLoadingNewFile: isLoadingNewFileRef.current,
-      isJumpingToPlayback: isJumpingToPlaybackRef.current,
-      stack: new Error().stack?.split('\n').slice(1, 3).join('\n')
-    });
-
-    // Only preserve loop region if we're not loading a new file
-    // If we're loading a new file, let the file loading effect handle setting the loop region
-    if (!isLoadingNewFileRef.current) {
-      // Immediately preserve loop region
-      const currentLoopStart = loopRegionToRestore.start;
-      const currentLoopEnd = loopRegionToRestore.end;
-      
-      // Only update if values have changed and we're not jumping to playback
-      // (during jump-to-playback, the loop region is managed separately)
-      if (!isJumpingToPlaybackRef.current && 
-          (Math.abs(loopStart - currentLoopStart) > 0.001 || 
-           Math.abs(loopEnd - currentLoopEnd) > 0.001)) {
-        setLoopStartWithLogging(currentLoopStart);
-        setLoopEndWithLogging(currentLoopEnd);
-      }
-    } else {
-      appLog('[App] Skipping loop region preservation in handleViewChange - loading new file');
-    }
-
-    // Set loading state
+    // Show loading state while we get the pitch data
     setIsLoadingPitchData(true);
-
-    // Set new timeout for data loading (separated from loop region handling)
-    viewChangeTimeoutRef.current = setTimeout(async () => {
-      try {
-        // Only load segments if we're in progressive mode
-        if (pitchManager.current.isInProgressiveMode()) {
-          const duration = pitchManager.current.getTotalDuration();
-          const isLongVideo = duration > 30;
-          
-          // Only consider it an initial load if we haven't done setup and have no data
-          const isInitialLoad = !initialSetupDoneRef.current && nativePitchData.times.length === 0;
-          
-          appLog('[App] View change triggered:', { 
-            startTime, 
-            endTime,
-            isInitialLoad,
-            isLongVideo,
-            duration,
-            preservedLoopRegion: loopRegionToRestore,
-            currentLoopStart: loopStart,
-            currentLoopEnd: loopEnd,
-            userSetLoop,
-            isLoadingNewFile: isLoadingNewFileRef.current,
-            isJumpingToPlayback: isJumpingToPlaybackRef.current
-          });
-          
-          // For initial load of long videos, force loading only first segment
-          if (isInitialLoad && isLongVideo) {
-            appLog('[App] Initial load of long video, forcing first segment only');
-            await pitchManager.current.loadSegmentsForTimeRange(0, 10);
-            const visibleData = pitchManager.current.getPitchDataForTimeRange(0, 10);
-            
-            // Set initial loop region for first load only if no user-set region
-            // and we're not in the middle of loading a new file
-            if (!userSetLoop && !isLoadingNewFileRef.current) {
-              setLoopStartWithLogging(0);
-              setLoopEndWithLogging(10);
-            } else if (userSetLoop && !isLoadingNewFileRef.current) {
-              // Restore user-set values
-              setLoopStartWithLogging(userSetLoop.start);
-              setLoopEndWithLogging(userSetLoop.end);
-            }
-            
-            // Update pitch data
-            setNativePitchData(visibleData);
-            
-            initialSetupDoneRef.current = true;
-          } else if (!isInitialLoad) {
-            // Only load new segments if this is not the initial setup
-            await pitchManager.current.loadSegmentsForTimeRange(startTime, endTime);
-            
-            // Get data for the current view
-            const visibleData = pitchManager.current.getPitchDataForTimeRange(startTime, endTime);
-            
-            // Update pitch data without modifying loop region
-            setNativePitchData(visibleData);
-            
-            // Only check and restore loop region if we're not loading a new file
-            // and we're not doing a jump to playback operation
-            if (!isLoadingNewFileRef.current && !isJumpingToPlaybackRef.current) {
-              // Ensure loop region is still correct after data loading
-              // First check for userSetLoop, which takes highest priority
-              if (userSetLoop) {
-                if (loopStart !== userSetLoop.start || loopEnd !== userSetLoop.end) {
-                  appLog('[App] Re-applying user-set loop region after data loading:', {
-                    current: { start: loopStart, end: loopEnd },
-                    userSet: userSetLoop
-                  });
-                  setLoopStartWithLogging(userSetLoop.start);
-                  setLoopEndWithLogging(userSetLoop.end);
-                }
-              }
-              // Then check for preserved values
-              else if (Math.abs(loopStart - loopRegionToRestore.start) > 0.001 || 
-                      Math.abs(loopEnd - loopRegionToRestore.end) > 0.001) {
-                appLog('[App] Re-applying preserved loop region after data loading:', {
-                  current: { start: loopStart, end: loopEnd },
-                  preserved: loopRegionToRestore
-                });
-                setLoopStartWithLogging(loopRegionToRestore.start);
-                setLoopEndWithLogging(loopRegionToRestore.end);
-              }
-            } else if (isJumpingToPlaybackRef.current) {
-              appLog('[App] Skipping loop region restoration - jump to playback in progress');
-            } else {
-              appLog('[App] Skipping loop region restoration - loading new file');
-            }
-          }
+    
+    try {
+      // KEEP: Loop region preservation logic
+      const userSetLoop = userSetLoopRef.current;
+      const hasPreservedValues = preservedLoopStart !== undefined && preservedLoopEnd !== undefined;
+      
+      const loopRegionToRestore = userSetLoop ? 
+        { start: userSetLoop.start, end: userSetLoop.end } : 
+        hasPreservedValues ? 
+          { start: preservedLoopStart!, end: preservedLoopEnd! } : 
+          { start: loopStart, end: loopEnd };
+  
+      // KEEP: Loop region preservation for non-new files
+      if (!isLoadingNewFileRef.current) {
+        const currentLoopStart = loopRegionToRestore.start;
+        const currentLoopEnd = loopRegionToRestore.end;
+        
+        if (Math.abs(loopStart - currentLoopStart) > 0.001 || 
+            Math.abs(loopEnd - currentLoopEnd) > 0.001) {
+          setLoopStartWithLogging(currentLoopStart);
+          setLoopEndWithLogging(currentLoopEnd);
         }
-      } catch (error) {
-        appError('Error loading pitch data for time range:', error);
-      } finally {
-        // Clear loading state
-        setIsLoadingPitchData(false);
       }
-    }, 100); // 100ms debounce
-  }, [nativePitchData.times, loopStart, loopEnd]);
+  
+      // Get pitch data and update state
+      const visibleData = pitchManager.current.getPitchDataForTimeRange(startTime, endTime);
+      setNativePitchData(visibleData);
+    } finally {
+      setIsLoadingPitchData(false);
+    }
+  }, [loopStart, loopEnd]);
+  
+  // DELETE: Remove all of these parts:
+  // - All references to isJumpingToPlaybackRef
+  // - All setTimeout calls for loading states
+  // - All setIsLoadingPitchData calls
+  // - All loadSegmentsForTimeRange calls
+  // - All verification checks for view range after loading
+  // - All error handling related to progressive loading
 
   // Consolidate initial view setup into a single effect
   React.useEffect(() => {
-    // Skip this logic completely if we're in the middle of a jump-to-playback operation
-    if (isJumpingToPlaybackRef.current) {
-      appLog('[App] Skipping initial view setup while jump-to-playback is in progress');
-      return;
-    }
+
 
     if (nativeChartInstance && nativePitchData.times.length > 0 && !initialSetupDoneRef.current) {
       const duration = nativePitchData.times[nativePitchData.times.length - 1];
@@ -1016,30 +896,28 @@ const App: React.FC = () => {
         appLog('[App] Setting initial view range for long video:', {
           duration,
           initialViewDuration,
-          isInitialSetup: !initialSetupDoneRef.current,
-          isJumpingToPlayback: isJumpingToPlaybackRef.current
+          isInitialSetup: !initialSetupDoneRef.current
         });
         
-        // Don't reset the view if we're in the middle of a jump-to-playback operation
-        if (!isJumpingToPlaybackRef.current) {
+
           // Update zoom state ref directly
-          if (nativeChartInstance.options.scales?.x) {
-            nativeChartInstance.options.scales.x.min = 0;
-            nativeChartInstance.options.scales.x.max = initialViewDuration;
+        if (nativeChartInstance.options.scales?.x) {
+          nativeChartInstance.options.scales.x.min = 0;
+          nativeChartInstance.options.scales.x.max = initialViewDuration;
             
-            // Also update the zoom state ref in the PitchGraph component
-            const chartWithZoomState = nativeChartInstance as unknown as { zoomStateRef: { current: { min: number; max: number } } };
-            if (chartWithZoomState.zoomStateRef) {
-              chartWithZoomState.zoomStateRef.current = { min: 0, max: initialViewDuration };
-            }
-            
-            // Force the chart to update its layout
-            nativeChartInstance.update('none');
-            
-            // Notify parent of view change
-            handleViewChange(0, initialViewDuration);
+          // Also update the zoom state ref in the PitchGraph component
+          const chartWithZoomState = nativeChartInstance as unknown as { zoomStateRef: { current: { min: number; max: number } } };
+          if (chartWithZoomState.zoomStateRef) {
+            chartWithZoomState.zoomStateRef.current = { min: 0, max: initialViewDuration };
           }
+            
+          // Force the chart to update its layout
+          nativeChartInstance.update('none');
+            
+          // Notify parent of view change
+          handleViewChange(0, initialViewDuration);
         }
+        
         
         // Always mark setup as done to prevent future resets
         initialSetupDoneRef.current = true;
@@ -1164,20 +1042,8 @@ const App: React.FC = () => {
       currentLoopStart: loopStart,
       currentLoopEnd: loopEnd,
       userSetLoop: userSetLoopRef.current,
-      autoLoopEnabled,
-      isJumpingToPlayback: isJumpingToPlaybackRef.current
+      autoLoopEnabled
     });
-    
-    // If we're in the middle of a jump-to-playback operation and this is an unexpected reset to 0-10,
-    // ignore this view change to prevent losing our position
-    if (isJumpingToPlaybackRef.current && 
-        startTime === 0 && 
-        endTime <= 10 && 
-        userSetLoopRef.current && 
-        userSetLoopRef.current.start > 20) { // Arbitrary threshold to detect unintended resets
-      appLog('[App] Ignoring view reset during jump-to-playback operation');
-      return;
-    }
     
     // If auto-loop is enabled, set the loop region to match the view
     if (autoLoopEnabled) {
@@ -1682,9 +1548,6 @@ const App: React.FC = () => {
     if (nativeMediaType === 'audio') return nativeAudioRef.current;
     return null;
   };
-
-  // Add handler for view changes (zooming/panning)
-  const viewChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Add state for media duration
   const [nativeMediaDuration, setNativeMediaDuration] = useState<number>(0);
@@ -1888,124 +1751,6 @@ const App: React.FC = () => {
       return () => clearTimeout(timerId);
     }
   }, [nativePitchData]);
-
-  // Function to jump to current playback position
-  const jumpToPlaybackPosition = () => {
-    const media = getActiveMediaElement();
-    if (!media || !nativeChartInstance) return;
-
-    const currentTime = media.currentTime;
-    const viewDuration = 10; // Show 10 seconds around current position
-    
-    // Calculate new view window centered around current time
-    let startTime = Math.max(0, currentTime - viewDuration * 0.3); // Position current time at 30% of view
-    let endTime = startTime + viewDuration;
-    
-    // If we're near the end of the video, adjust the window
-    const totalDuration = pitchManager.current.getTotalDuration();
-    if (endTime > totalDuration) {
-      endTime = totalDuration;
-      startTime = Math.max(0, endTime - viewDuration);
-    }
-    
-    appLog('[App] Jumping to playback position:', {
-      currentTime,
-      newView: { startTime, endTime },
-      autoLoopEnabled
-    });
-    
-    try {
-      // Set flag to indicate we're initiating a jump to playback action
-      isJumpingToPlaybackRef.current = true;
-      
-      // First, set loading state to indicate we're changing view
-      setIsLoadingPitchData(true);
-      
-      // If auto-loop is enabled, update the loop region immediately
-      if (autoLoopEnabled) {
-        appLog('[App] Auto-loop enabled, setting loop region to match view:', { start: startTime, end: endTime });
-        // Update userSetLoopRef since this is effectively a user action
-        userSetLoopRef.current = { start: startTime, end: endTime };
-        setLoopStartWithLogging(startTime);
-        setLoopEndWithLogging(endTime);
-        
-        // Set playback position to start of loop
-        if (media) {
-          media.currentTime = startTime;
-        }
-      }
-      
-      // Trigger data loading first
-      handleViewChange(startTime, endTime);
-      
-      // Wait a short time for data to load before updating the chart view
-      setTimeout(() => {
-        try {
-          // Update chart view after data is loaded
-          if (nativeChartInstance && nativeChartInstance.setViewRange) {
-            appLog('[App] Updating chart view range to:', { min: startTime, max: endTime });
-            nativeChartInstance.setViewRange({ min: startTime, max: endTime });
-          } else if (nativeChartInstance && nativeChartInstance.options?.scales?.x) {
-            // Fallback if setViewRange not available
-            appLog('[App] Fallback: Updating chart scales directly');
-            nativeChartInstance.options.scales.x.min = startTime;
-            nativeChartInstance.options.scales.x.max = endTime;
-            nativeChartInstance.update();
-          }
-          
-          // Clear loading state
-          setIsLoadingPitchData(false);
-          
-          // After a delay, set up a verification check to ensure our view didn't get reset
-          setTimeout(() => {
-            try {
-              // Check if chart view is still at the expected range
-              if (nativeChartInstance && nativeChartInstance.scales?.x) {
-                const currentMin = nativeChartInstance.scales.x.min;
-                const currentMax = nativeChartInstance.scales.x.max;
-                
-                // If the view got reset, fix it
-                if (Math.abs(currentMin - startTime) > 0.1 || Math.abs(currentMax - endTime) > 0.1) {
-                  appLog('[App] Jump target lost, restoring view to:', { min: startTime, max: endTime });
-                  
-                  if (nativeChartInstance.setViewRange) {
-                    nativeChartInstance.setViewRange({ min: startTime, max: endTime });
-                  } else if (nativeChartInstance.options?.scales?.x) {
-                    nativeChartInstance.options.scales.x.min = startTime;
-                    nativeChartInstance.options.scales.x.max = endTime;
-                    nativeChartInstance.update();
-                  }
-                  
-                  // Also restore the loop region if auto-loop is enabled
-                  if (autoLoopEnabled) {
-                    appLog('[App] Restoring loop region after view change reset');
-                    // Update userSetLoopRef again
-                    userSetLoopRef.current = { start: startTime, end: endTime };
-                    setLoopStartWithLogging(startTime);
-                    setLoopEndWithLogging(endTime);
-                  }
-                }
-              }
-            } catch (error) {
-              appError('[App] Error in view restoration check:', error);
-            } finally {
-              // Always clear the jump to playback flag
-              isJumpingToPlaybackRef.current = false;
-            }
-          }, 500); // Short delay to check after processing
-        } catch (error) {
-          appError('[App] Error updating chart view:', error);
-          isJumpingToPlaybackRef.current = false;
-          setIsLoadingPitchData(false);
-        }
-      }, 500); // Delay to allow data loading
-    } catch (error) {
-      appError('[App] Error initiating jump to playback:', error);
-      // Reset flags
-      isJumpingToPlaybackRef.current = false;
-      setIsLoadingPitchData(false);
-    }
-  };
 
   // Add a utility function to detect mobile devices
   const isMobileDevice = () => {
@@ -2310,13 +2055,6 @@ const resetPitchDetectionSettings = useCallback(() => {
           }
         }
       }
-      
-      // Jump to playback position
-      else if (key === keyboardShortcuts.jumpToPlayback) {
-        if (nativeMediaDuration > 30) {
-          jumpToPlaybackPosition();
-        }
-      }
     };
     
     window.addEventListener('keydown', handleKeyDown);
@@ -2325,7 +2063,7 @@ const resetPitchDetectionSettings = useCallback(() => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [nativeChartInstance, showGuide, showSettings, nativeMediaDuration, jumpToPlaybackPosition]);
+  }, [nativeChartInstance, showGuide, showSettings, nativeMediaDuration]);
 
   // Add state for customizable keyboard shortcuts
   const [keyboardShortcuts, setKeyboardShortcuts] = useState<Record<string, string>>(() => {
@@ -2342,8 +2080,7 @@ const resetPitchDetectionSettings = useCallback(() => {
       playNative: 'n',
       loop: 'l',
       record: 'r',
-      playUser: 'e',
-      jumpToPlayback: 'j'
+      playUser: 'e'
     };
   });
 
@@ -2362,8 +2099,7 @@ const resetPitchDetectionSettings = useCallback(() => {
       playNative: 'n',
       loop: 'l',
       record: 'r',
-      playUser: 'e',
-      jumpToPlayback: 'j'
+      playUser: 'e'
     };
     localStorage.setItem('keyboardShortcuts', JSON.stringify(defaults));
     setKeyboardShortcuts(defaults);
@@ -2572,17 +2308,6 @@ const resetPitchDetectionSettings = useCallback(() => {
                     Auto-loop visible area
                   </label>
                   
-                  {/* Jump to playback position button - only for long videos */}
-                  {nativeMediaDuration > 30 && (
-                    <button
-                      className="jump-button"
-                      title="Jump to current playback position"
-                      disabled={!nativeChartInstance || !getActiveMediaElement()}
-                      onClick={jumpToPlaybackPosition}
-                    >
-                      Jump to playback
-                    </button>
-                  )}
                 </div>
               </div>
             )}
@@ -2621,7 +2346,6 @@ const resetPitchDetectionSettings = useCallback(() => {
                 onViewChange={onViewChangeHandler}
                 totalDuration={nativeMediaDuration}
                 initialViewDuration={nativeMediaDuration > 30 ? 10 : undefined}
-                isJumpingToPlayback={isJumpingToPlaybackRef.current}
                 yAxisConfig={{
                   beginAtZero: false,
                   suggestedMin: getNativeYAxisRange()[0],
@@ -3290,25 +3014,6 @@ const resetPitchDetectionSettings = useCallback(() => {
                         </div>
                       </div>
                       
-                      <div className="shortcut-item">
-                        <span>Jump to playback position:</span>
-                        <div className="shortcut-input-container">
-                          <input 
-                            type="text" 
-                            value={keyboardShortcuts.jumpToPlayback}
-                            onChange={(e) => saveKeyboardShortcut('jumpToPlayback', e.target.value.length ? e.target.value[0].toLowerCase() : '')}
-                            maxLength={1}
-                            className="shortcut-input"
-                          />
-                          <button 
-                            onClick={() => saveKeyboardShortcut('jumpToPlayback', 'j')} 
-                            title="Reset to default"
-                            className="reset-button"
-                          >
-                            ↺
-                          </button>
-                        </div>
-                      </div>
                     </div>
                     
                     <button 
