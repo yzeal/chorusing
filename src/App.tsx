@@ -7,6 +7,7 @@ import type { Chart } from 'chart.js';
 import './App.css'
 import { PitchDetector } from 'pitchy'
 import { PitchDataManager } from './services/PitchDataManager'
+import { convertToVtt } from './utils/subtitleConverter';
 
 // Create logging wrapper functions that only log in development mode
 const isProduction = import.meta.env.MODE === 'production';
@@ -219,34 +220,34 @@ const App: React.FC = () => {
 
   const subtitleInputRef = useRef<HTMLInputElement>(null);
 
-  // Function to handle subtitle file loading
-  const handleSubtitleLoad = async (file: File): Promise<void> => {
-    try {
-      const text = await file.text();
-      appLog('Loaded subtitle file:', text);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        appError('Error loading subtitle file:', error.message);
-      } else {
-        appError('Error loading subtitle file:', String(error));
-      }
-    }
-  };
-
+  
   // Update subtitle file change handler
-  const handleSubtitleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+  const handleSubtitleChange = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    try {
+      // Convert subtitle file if needed
+      const result = await convertToVtt(file);
+      
+      if (!result.success) {
+        appError(result.error || 'Unknown error converting subtitle file');
+        return;
+      }
+
       // Clean up old URL if it exists
       if (subtitleUrl) {
         URL.revokeObjectURL(subtitleUrl);
       }
-      // Create new URL
-      const newUrl = URL.createObjectURL(file);
+
+      // Create a new Blob with the VTT content
+      const vttBlob = new Blob([result.content], { type: 'text/vtt' });
+      const newUrl = URL.createObjectURL(vttBlob);
+      
       setSubtitleUrl(newUrl);
       setCurrentSubtitle({
         file,
-        fileName: file.name
+        fileName: file.name + (file.name.endsWith('.vtt') ? '' : ' (converted to VTT)')
       });
       
       // Force video reload and enable track
@@ -263,8 +264,8 @@ const App: React.FC = () => {
           }
         };
       }
-      
-      void handleSubtitleLoad(file);
+    } catch (error) {
+      appError('Error processing subtitle file:', error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -3391,10 +3392,10 @@ const resetPitchDetectionSettings = useCallback(() => {
                     <div className="setting-group">                    
                     <label className="setting-label">                      
                       <span>Subtitle Upload</span>                      
-                      <div className="setting-description">Upload a subtitle file for the native recording (only *.vtt format supported)</div>
+                      <div className="setting-description">Upload a subtitle file for the native recording (*.vtt, *.srt, or *.ass formats supported - non-VTT files will be automatically converted)</div>
                     </label>
                     <div className="setting-controls">
-                      <input type="file"  accept=".vtt" style={{ display: 'none' }} ref={subtitleInputRef} onChange={handleSubtitleChange}/>
+                      <input type="file" accept=".vtt,.srt,.ass" style={{ display: 'none' }} ref={subtitleInputRef} onChange={handleSubtitleChange}/>
                       <div className="setting-control-row subtitle-controls">
                         <button className="settings-button" onClick={() => subtitleInputRef.current?.click()} disabled={!nativeMediaUrl}>Load Subtitle</button>                       
                         <button  className="settings-button" onClick={() => {
