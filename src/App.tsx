@@ -2075,6 +2075,37 @@ const resetPitchDetectionSettings = useCallback(() => {
 
   
 
+  // Add loading state for pitch extraction
+  const [isExtractingPitch, setIsExtractingPitch] = useState(false);
+
+  // Add handler for pitch extraction
+  const handleExtractPitch = async () => {
+    const media = getActiveMediaElement() as HTMLVideoElement | null;
+    if (!media) return;
+
+    setIsExtractingPitch(true);
+    try {
+      await pitchManager.current.extractSegment(media.currentTime);
+      const extractedData = pitchManager.current.getPitchDataForTimeRange(0, pitchManager.current.getTotalDuration());
+      
+      // Apply smoothing to the extracted segment
+      const smoothingWindowSize = separateSmoothingSettings ? 
+        getWindowSizeFromSettings(smoothingStyle, nativeSmoothingLevel) : 
+        getWindowSizeFromSettings(smoothingStyle, smoothingLevel);
+
+      const enhancedData = {
+        times: extractedData.times,
+        pitches: smoothPitch(extractedData.pitches, smoothingWindowSize)
+      };
+      
+      setNativePitchData(enhancedData);
+    } catch (error) {
+      appError('Error extracting pitch data:', error);
+    } finally {
+      setIsExtractingPitch(false);
+    }
+  };
+
   return (
     <div 
       className="app-container"
@@ -2175,29 +2206,42 @@ const resetPitchDetectionSettings = useCallback(() => {
               />
             )}
             {nativeMediaUrl && nativeMediaType === 'video' && (
-              <video
-                ref={nativeVideoRef}
-                src={nativeMediaUrl}
-                controls
-                playsInline
-                loop
-                style={{
-                  width: '100%',
-                  maxHeight: '180px',
-                  marginBottom: '0.75rem',
-                  maxWidth: '100%'
-                }}
-              >
-                {subtitleUrl && (
-                  <track
-                    kind="subtitles"
-                    src={subtitleUrl}
-                    srcLang="ja"
-                    label="Japanese"
-                    default
-                  />
+              <div style={{ position: 'relative' }}>
+                <video
+                  ref={nativeVideoRef}
+                  src={nativeMediaUrl}
+                  controls
+                  playsInline
+                  loop
+                  style={{
+                    width: '100%',
+                    maxHeight: '180px',
+                    marginBottom: '0.75rem',
+                    maxWidth: '100%'
+                  }}
+                />
+                {/* Add Extract Pitch Curve button for long videos */}
+                {pitchManager.current.isLongVideoFile() && (
+                  <button
+                    onClick={handleExtractPitch}
+                    disabled={isExtractingPitch}
+                    style={{
+                      position: 'absolute',
+                      bottom: '1rem',
+                      right: '1rem',
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#1976d2',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: isExtractingPitch ? 'wait' : 'pointer',
+                      opacity: isExtractingPitch ? 0.7 : 1
+                    }}
+                  >
+                    {isExtractingPitch ? 'Extracting...' : 'Extract Pitch Curve'}
+                  </button>
                 )}
-              </video>
+              </div>
             )}
             {/* Loop selection and delay controls (moved above the curve) */}
             {nativePitchData.times.length > 0 && (
