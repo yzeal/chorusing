@@ -18,7 +18,7 @@ import { DragController } from './DragController';
 const isProduction = import.meta.env.MODE === 'production';
 
 // Log function that suppresses logs in production
-const prodLog = (message: string, ...args: any[]) => {
+const prodLog = (message: string, ...args: unknown[]) => {
   if (!isProduction) {
     prodLog(message, ...args);
   }
@@ -81,6 +81,12 @@ declare module 'chart.js' {
   }
 }
 
+// Add ExtendedChart type
+interface ExtendedChart extends Chart<'line', (number | null)[], number> {
+  setViewRange?: (range: { min: number; max: number }) => void;
+  zoomStateRef?: React.RefObject<{ min: number; max: number }>;
+}
+
 export interface PitchGraphWithControlsProps {
   times: number[];
   pitches: (number | null)[];
@@ -88,11 +94,11 @@ export interface PitchGraphWithControlsProps {
   color?: string;
   loopStart?: number;
   loopEnd?: number;
-  yFit?: [number, number] | null;
+  yFit?: [number, number];
   playbackTime?: number;
-  onChartReady?: (chart: Chart<'line', (number | null)[], number> | null) => void;
+  onChartReady?: (chart: ExtendedChart) => void;
   onLoopChange?: (start: number, end: number) => void;
-  onViewChange?: (startTime: number, endTime: number, loopStart?: number, loopEnd?: number) => void;
+  onViewChange?: (startTime: number, endTime: number, preservedLoopStart?: number, preservedLoopEnd?: number) => void;
   totalDuration?: number;
   initialViewDuration?: number;
   isUserRecording?: boolean;

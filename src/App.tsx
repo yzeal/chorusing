@@ -2078,7 +2078,10 @@ const resetPitchDetectionSettings = useCallback(() => {
   // Add loading state for pitch extraction
   const [isExtractingPitch, setIsExtractingPitch] = useState(false);
 
-  // Add handler for pitch extraction
+  // Add state for current segment boundaries
+  const [currentSegment, setCurrentSegment] = useState<{ startTime: number; endTime: number } | null>(null);
+
+  // Modify handleExtractPitch to update segment boundaries
   const handleExtractPitch = async () => {
     const media = getActiveMediaElement() as HTMLVideoElement | null;
     if (!media) return;
@@ -2087,6 +2090,10 @@ const resetPitchDetectionSettings = useCallback(() => {
     try {
       await pitchManager.current.extractSegment(media.currentTime);
       const extractedData = pitchManager.current.getPitchDataForTimeRange(0, pitchManager.current.getTotalDuration());
+      
+      // Get current segment boundaries
+      const segment = pitchManager.current.getCurrentSegment();
+      setCurrentSegment(segment);
       
       // Apply smoothing to the extracted segment
       const smoothingWindowSize = separateSmoothingSettings ? 
@@ -2356,12 +2363,16 @@ const resetPitchDetectionSettings = useCallback(() => {
                 playbackTime={nativePlaybackTime}
                 onLoopChange={onLoopChangeHandler}
                 onViewChange={onViewChangeHandler}
-                totalDuration={nativeMediaDuration}
-                initialViewDuration={nativeMediaDuration > 30 ? 10 : undefined}
+                totalDuration={pitchManager.current.isLongVideoFile() ? 
+                  (currentSegment?.endTime || 0) - (currentSegment?.startTime || 0) : 
+                  pitchManager.current.getTotalDuration()}
+                initialViewDuration={pitchManager.current.isLongVideoFile() ? 
+                  (currentSegment?.endTime || 0) - (currentSegment?.startTime || 0) : 
+                  undefined}
                 yAxisConfig={{
                   beginAtZero: false,
-                  suggestedMin: getNativeYAxisRange()[0],
-                  suggestedMax: getNativeYAxisRange()[1],
+                  suggestedMin: loopYFit?.[0],
+                  suggestedMax: loopYFit?.[1],
                   ticks: {
                     stepSize: 50,
                     precision: 0

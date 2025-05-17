@@ -72,9 +72,15 @@ export class PitchDataManager {
   private currentFile: File | null = null;
   private totalDuration: number = 0;
   private isLongVideo: boolean = false;
+  private currentSegment: { startTime: number; endTime: number } | null = null;
 
   constructor() {
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+
+  // Add getter for current segment boundaries
+  getCurrentSegment(): { startTime: number; endTime: number } | null {
+    return this.currentSegment;
   }
 
   private async getFileDuration(file: File): Promise<number> {
@@ -99,6 +105,7 @@ export class PitchDataManager {
     this.pitchData = { times: [], pitches: [] };
     this.totalDuration = 0;
     this.currentFile = null;
+    this.currentSegment = null;
 
     // Now initialize with the new file
     this.currentFile = file;
@@ -195,6 +202,9 @@ export class PitchDataManager {
       // Near end: extend backward
       startTime = Math.max(0, this.totalDuration - 20);
     }
+
+    // Store current segment boundaries
+    this.currentSegment = { startTime, endTime };
 
     // Clear previous data
     this.pitchData = { times: [], pitches: [] };
