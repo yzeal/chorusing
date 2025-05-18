@@ -482,6 +482,9 @@ const App: React.FC = () => {
     // Reset user-set loop region when loading a new file
     userSetLoopRef.current = null;
     appLog('[App] New file loaded, clearing user-set loop region');
+    
+    // Reset browsing mode when loading a new file
+    setIsBrowsingMode(false);
 
     // Use the existing file handling logic
     const url = URL.createObjectURL(file);
@@ -658,6 +661,9 @@ const App: React.FC = () => {
     // Reset user-set loop region when loading a new file
     userSetLoopRef.current = null;
     appLog('[App] New file loaded, clearing user-set loop region');
+    
+    // Reset browsing mode when loading a new file
+    setIsBrowsingMode(false);
     
     const url = URL.createObjectURL(file);
     setNativeMediaUrl(url);
@@ -2160,6 +2166,13 @@ const resetPitchDetectionSettings = useCallback(() => {
       duration: media.duration
     });
 
+    // Reset browsing mode when extracting pitch, but only if media is paused
+    // This prevents the playback position from jumping to the loop start 
+    // which would be confusing if the user is currently watching/browsing
+    if (media.paused) {
+      setIsBrowsingMode(false);
+    }
+
     setIsExtractingPitch(true);
     try {
       await pitchManager.current.extractSegment(media.currentTime);
@@ -2354,7 +2367,11 @@ const resetPitchDetectionSettings = useCallback(() => {
                 alignItems: 'center'
               }}>
                 <div style={{ fontWeight: 'bold', marginRight: '1rem' }}>
-                  Video/Audio browsing controls:
+                  {nativePitchData.times.length === 0 ? (
+                    `Browse ${nativeMediaType || 'media'}, then extract 20s of pitch curve data from there:`
+                  ) : (
+                    `${nativeMediaType === 'video' ? 'Video' : 'Audio'} browsing controls:`
+                  )}
                 </div>
                 <div style={{ 
                   display: 'flex', 
@@ -2378,14 +2395,17 @@ const resetPitchDetectionSettings = useCallback(() => {
                     {isExtractingPitch ? 'Extracting...' : 'Extract Pitch Curve'}
                   </button>
                   
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <input
-                      type="checkbox"
-                      checked={isBrowsingMode}
-                      onChange={(e) => setIsBrowsingMode(e.target.checked)}
-                    />
-                    Don't loop, I'm browsing!
-                  </label>
+                  {/* Only show the checkbox after pitch data is extracted */}
+                  {nativePitchData.times.length > 0 && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={isBrowsingMode}
+                        onChange={(e) => setIsBrowsingMode(e.target.checked)}
+                      />
+                      Don't loop, I'm browsing!
+                    </label>
+                  )}
                 </div>
               </div>
             )}
