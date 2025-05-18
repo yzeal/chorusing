@@ -190,111 +190,152 @@ export class PitchDataManager {
   async extractSegment(currentTime: number): Promise<void> {
     if (!this.currentFile || !this.isLongVideo) return;
 
-    // Calculate segment bounds
-    let startTime = Math.max(0, currentTime - 0.5);
-    let endTime = Math.min(this.totalDuration, currentTime + 19.5);
+    try {
+      // Calculate segment bounds with 1s buffer on each side
+      let startTime = Math.max(0, currentTime - 0.5 - 1); // 0.5s offset + 1s buffer
+      let endTime = Math.min(this.totalDuration, currentTime + 19.5 + 1); // + 1s buffer
 
-    // Adjust for edge cases
-    if (startTime === 0) {
-      // Near start: extend forward
-      endTime = Math.min(this.totalDuration, 20);
-    } else if (endTime === this.totalDuration) {
-      // Near end: extend backward
-      startTime = Math.max(0, this.totalDuration - 20);
-    }
+      // Adjust for edge cases
+      if (startTime === 0) {
+        // Near start: extend forward
+        endTime = Math.min(this.totalDuration, 22); // 20s + 2s buffer
+      } else if (endTime === this.totalDuration) {
+        // Near end: extend backward
+        startTime = Math.max(0, this.totalDuration - 22); // 20s + 2s buffer
+      }
 
-    // Always log segment boundaries
-    console.log('[PitchDataManager] Extracting segment:', {
-      currentTime,
-      startTime,
-      endTime,
-      duration: endTime - startTime
-    });
+      // Always log segment boundaries
+      console.log('[PitchDataManager] Extracting segment:', {
+        currentTime,
+        startTime,
+        endTime,
+        duration: endTime - startTime
+      });
 
-    // Store current segment boundaries
-    this.currentSegment = { startTime, endTime };
+      // Store current segment boundaries (excluding the 1s buffers for display purposes)
+      const displayStartTime = startTime + 1;
+      const displayEndTime = endTime - 1;
+      this.currentSegment = { 
+        startTime: displayStartTime > 0 ? displayStartTime : 0, 
+        endTime: displayEndTime < this.totalDuration ? displayEndTime : this.totalDuration 
+      };
 
-    // Clear previous data
-    this.pitchData = { times: [], pitches: [] };
+      // Clear previous data
+      this.pitchData = { times: [], pitches: [] };
 
-    // Process the segment
-    const file = this.currentFile;
-    const arrayBuffer = await file.arrayBuffer();
-    const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-    const channelData = audioBuffer.getChannelData(0);
-    const sampleRate = audioBuffer.sampleRate;
+      // Process the segment - we'll use the original file for this
+      // This is more reliable than trying to capture from the media element
+      const file = this.currentFile;
+      const arrayBuffer = await file.arrayBuffer();
+      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer.slice(0, 2000000000)); // Stay under 2GB limit
+      const channelData = audioBuffer.getChannelData(0);
+      const sampleRate = audioBuffer.sampleRate;
 
-    // Calculate sample indices for this segment
-    const startSample = Math.floor(startTime * sampleRate);
-    const endSample = Math.floor(endTime * sampleRate);
-    
-    console.log('[PitchDataManager] Processing samples:', {
-      sampleRate,
-      startSample,
-      endSample,
-      expectedDuration: (endSample - startSample) / sampleRate
-    });
-
-    const frameSize = 2048;
-    const hopSize = 256;
-    const detector = PitchDetector.forFloat32Array(frameSize);
-    const pitches: (number | null)[] = [];
-    const times: number[] = [];
-
-    // Process all samples in this segment
-    for (let i = startSample; i < endSample; i += hopSize) {
-      let frame: Float32Array;
+      // Calculate sample indices for this segment
+      // If we can't fit the entire segment in memory, we'll just process what we can
+      const maxSampleIndex = channelData.length - 1;
+      const startSample = Math.min(Math.floor(startTime * sampleRate), maxSampleIndex);
+      const endSample = Math.min(Math.floor(endTime * sampleRate), maxSampleIndex);
       
-      if (i + frameSize > endSample) {
-        // Create padded frame for end of segment
-        frame = new Float32Array(frameSize);
-        const remainingSamples = endSample - i;
-        frame.set(channelData.slice(i, endSample));
-        const lastValue = channelData[endSample - 1] || 0;
-        for (let j = remainingSamples; j < frameSize; j++) {
-          frame[j] = lastValue;
+      console.log('[PitchDataManager] Processing samples:', {
+        sampleRate,
+        startSample,
+        endSample,
+        maxIndex: maxSampleIndex,
+        expectedDuration: (endSample - startSample) / sampleRate
+      });
+
+      // Use a larger hop size to process faster
+      const frameSize = 2048;
+      const hopSize = 2048; // Larger hop size = faster processing, fewer data points
+      const detector = PitchDetector.forFloat32Array(frameSize);
+      const pitches: (number | null)[] = [];
+      const times: number[] = [];
+
+      // Process samples at regular intervals
+      for (let i = startSample; i < endSample; i += hopSize) {
+        // Create a frame for analysis
+        let frame: Float32Array;
+        
+        if (i + frameSize > endSample) {
+          // Create padded frame for end of segment
+          frame = new Float32Array(frameSize);
+          const remainingSamples = endSample - i;
+          if (remainingSamples > 0) {
+            frame.set(channelData.slice(i, endSample));
+            // Pad with last value
+            const lastValue = channelData[endSample - 1] || 0;
+            for (let j = remainingSamples; j < frameSize; j++) {
+              frame[j] = lastValue;
+            }
+          }
+        } else {
+          frame = channelData.slice(i, i + frameSize);
         }
-      } else {
-        frame = channelData.slice(i, i + frameSize);
-      }
 
-      const [pitch, clarity] = detector.findPitch(frame, sampleRate);
-      if (pitch >= MIN_PITCH && pitch <= MAX_PITCH && clarity >= MIN_CLARITY) {
-        pitches.push(pitch);
-      } else {
-        pitches.push(null);
+        const [pitch, clarity] = detector.findPitch(frame, sampleRate);
+        if (pitch >= MIN_PITCH && pitch <= MAX_PITCH && clarity >= MIN_CLARITY) {
+          pitches.push(pitch);
+        } else {
+          pitches.push(null);
+        }
+        
+        // Normalize time values for display - make them relative to segment start
+        // This makes the graph show a 0-20s range instead of the actual video times
+        const normalizedTime = (i - startSample) / sampleRate;
+        times.push(normalizedTime);
       }
       
-      // Normalize time values for display - make them relative to segment start
-      // This makes the graph show a 0-20s range instead of the actual video times
-      times.push((i - startSample) / sampleRate);
-    }
+      console.log('[PitchDataManager] Extraction complete:', {
+        frames: times.length,
+        duration: times.length > 0 ? times[times.length - 1] : 0
+      });
 
-    // Apply standard median filter first
-    const medianSmoothed = medianFilter(pitches, MEDIAN_FILTER_SIZE);
-    
-    // Then apply enhanced smoothing for more simplified curves
-    const enhancedSmooth = smoothPitch(medianSmoothed, 25);
-    
-    // Log the final time range
-    console.log('[PitchDataManager] Processed segment data:', {
-      timePoints: times.length,
-      timeRange: times.length > 0 ? {
-        first: times[0],
-        last: times[times.length - 1],
-        span: times[times.length - 1] - times[0]
-      } : 'no data',
-      actualVideoRange: {
-        start: startTime,
-        end: endTime
+      // If no data was collected, throw an error
+      if (times.length === 0) {
+        throw new Error('No pitch data collected during extraction');
       }
-    });
-
-    // Update the segment data
-    this.pitchData = {
-      times,
-      pitches: enhancedSmooth
-    };
+      
+      // Scale the time values to match the 0-20s range exactly
+      const normalizedTimes = times.map(t => {
+        return t * (20 / (endTime - startTime));
+      });
+      
+      // Apply standard median filter first
+      const medianSmoothed = medianFilter(pitches, MEDIAN_FILTER_SIZE);
+      
+      // Then apply enhanced smoothing for more simplified curves
+      const enhancedSmooth = smoothPitch(medianSmoothed, 25);
+      
+      // Log the final time range
+      console.log('[PitchDataManager] Processed segment data:', {
+        timePoints: normalizedTimes.length,
+        timeRange: normalizedTimes.length > 0 ? {
+          first: normalizedTimes[0],
+          last: normalizedTimes[normalizedTimes.length - 1],
+          span: normalizedTimes[normalizedTimes.length - 1] - normalizedTimes[0]
+        } : 'no data',
+        actualVideoRange: {
+          start: startTime,
+          end: endTime,
+          displayStart: this.currentSegment.startTime,
+          displayEnd: this.currentSegment.endTime
+        }
+      });
+      
+      // Update the segment data
+      this.pitchData = {
+        times: normalizedTimes,
+        pitches: enhancedSmooth
+      };
+      
+    } catch (error) {
+      console.error('[PitchDataManager] Error extracting segment:', error);
+      // Reset segment if there was an error
+      this.currentSegment = null;
+      // Re-throw so the UI can show an error
+      throw error;
+    }
   }
 
   // Add method to check if this is a long video
