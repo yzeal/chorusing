@@ -264,8 +264,10 @@ export class PitchDataManager {
       } else {
         pitches.push(null);
       }
-      // Store actual time relative to video start
-      times.push(startTime + (i - startSample) / sampleRate);
+      
+      // Normalize time values for display - make them relative to segment start
+      // This makes the graph show a 0-20s range instead of the actual video times
+      times.push((i - startSample) / sampleRate);
     }
 
     // Apply standard median filter first
@@ -281,7 +283,11 @@ export class PitchDataManager {
         first: times[0],
         last: times[times.length - 1],
         span: times[times.length - 1] - times[0]
-      } : 'no data'
+      } : 'no data',
+      actualVideoRange: {
+        start: startTime,
+        end: endTime
+      }
     });
 
     // Update the segment data
@@ -294,6 +300,18 @@ export class PitchDataManager {
   // Add method to check if this is a long video
   isLongVideoFile(): boolean {
     return this.isLongVideo;
+  }
+
+  // Method to convert a normalized time (0-20s display time) to actual video time
+  normalizedToVideoTime(normalizedTime: number): number {
+    if (!this.isLongVideo || !this.currentSegment) return normalizedTime;
+    return this.currentSegment.startTime + normalizedTime;
+  }
+
+  // Method to convert actual video time to normalized display time
+  videoToNormalizedTime(videoTime: number): number {
+    if (!this.isLongVideo || !this.currentSegment) return videoTime;
+    return Math.max(0, videoTime - this.currentSegment.startTime);
   }
 
   getPitchDataForTimeRange(startTime: number, endTime: number): PitchData {
@@ -309,4 +327,9 @@ export class PitchDataManager {
     return this.totalDuration;
   }
 
+  // Get segment duration for pitch graph display
+  getSegmentDuration(): number {
+    if (!this.isLongVideo || !this.currentSegment) return this.totalDuration;
+    return this.currentSegment.endTime - this.currentSegment.startTime;
+  }
 } 

@@ -897,14 +897,39 @@ const App: React.FC = () => {
   const onLoopChangeHandler = (start: number, end: number) => {
     appLog('[App] Loop region changed by user interaction:', { start, end });
     
-    // Store these values as the last valid user-set values
-    userSetLoopRef.current = { start, end };
-    
-    setLoopStartWithLogging(start);
-    setLoopEndWithLogging(end);
-    if (getActiveMediaElement()) {
-      getActiveMediaElement()!.currentTime = start;
+    // For long videos, convert normalized graph times to actual video times
+    if (pitchManager.current.isLongVideoFile() && currentSegment) {
+      // Convert the normalized time to video time
+      const videoStart = pitchManager.current.normalizedToVideoTime(start);
+      const videoEnd = pitchManager.current.normalizedToVideoTime(end);
+      
+      appLog('[App] Converted normalized time to video time:', { 
+        normalizedStart: start, 
+        normalizedEnd: end,
+        videoStart,
+        videoEnd
+      });
+      
+      // Store these values as the last valid user-set values
+      userSetLoopRef.current = { start: videoStart, end: videoEnd };
+      
+      setLoopStartWithLogging(videoStart);
+      setLoopEndWithLogging(videoEnd);
+      if (getActiveMediaElement()) {
+        getActiveMediaElement()!.currentTime = videoStart;
+      }
+    } else {
+      // For short videos, no conversion needed
+      // Store these values as the last valid user-set values
+      userSetLoopRef.current = { start, end };
+      
+      setLoopStartWithLogging(start);
+      setLoopEndWithLogging(end);
+      if (getActiveMediaElement()) {
+        getActiveMediaElement()!.currentTime = start;
+      }
     }
+    
     fitYAxisToLoop();
   };
 
@@ -1013,25 +1038,59 @@ const App: React.FC = () => {
       autoLoopEnabled
     });
     
-    // If auto-loop is enabled, set the loop region to match the view
-    if (autoLoopEnabled) {
-      appLog('[App] Auto-loop enabled, setting loop region to match view:', { start: startTime, end: endTime });
-      // Update userSetLoopRef since this is effectively a user action
-      userSetLoopRef.current = { start: startTime, end: endTime };
-      setLoopStartWithLogging(startTime);
-      setLoopEndWithLogging(endTime);
+    // For long videos, we need to convert the normalized times to actual video times
+    if (pitchManager.current.isLongVideoFile() && currentSegment) {
+      // Convert normalized times to video times
+      const videoStartTime = pitchManager.current.normalizedToVideoTime(startTime);
+      const videoEndTime = pitchManager.current.normalizedToVideoTime(endTime);
       
-      // Call handleViewChange with the new loop region
-      handleViewChange(startTime, endTime, startTime, endTime);
-    } else {
-      // Prefer user-set values if available, otherwise use preserved values
-      const loopToPreserve = userSetLoopRef.current || 
-        (preservedLoopStart !== undefined && preservedLoopEnd !== undefined ? 
-          { start: preservedLoopStart, end: preservedLoopEnd } : 
-          { start: loopStart, end: loopEnd });
+      // Also convert preserved loop times if they exist
+      const videoPreservedLoopStart = preservedLoopStart !== undefined ? 
+        pitchManager.current.normalizedToVideoTime(preservedLoopStart) : undefined;
+      const videoPreservedLoopEnd = preservedLoopEnd !== undefined ? 
+        pitchManager.current.normalizedToVideoTime(preservedLoopEnd) : undefined;
+      
+      appLog('[App] Converted normalized view times to video times:', {
+        normalizedStart: startTime,
+        normalizedEnd: endTime,
+        videoStart: videoStartTime,
+        videoEnd: videoEndTime,
+        normalizedPreservedStart: preservedLoopStart,
+        normalizedPreservedEnd: preservedLoopEnd,
+        videoPreservedStart: videoPreservedLoopStart,
+        videoPreservedEnd: videoPreservedLoopEnd
+      });
+      
+      // If auto-loop is enabled, set the loop region to match the view
+      if (autoLoopEnabled) {
+        appLog('[App] Auto-loop enabled, setting loop region to match view:', { start: videoStartTime, end: videoEndTime });
+        // Update userSetLoopRef since this is effectively a user action
+        userSetLoopRef.current = { start: videoStartTime, end: videoEndTime };
+        setLoopStartWithLogging(videoStartTime);
+        setLoopEndWithLogging(videoEndTime);
         
-      // Call handleViewChange with the preferred loop values
-      handleViewChange(startTime, endTime, loopToPreserve.start, loopToPreserve.end);
+        // Call handleViewChange with the new loop region
+        handleViewChange(startTime, endTime, preservedLoopStart, preservedLoopEnd);
+      } else {
+        // Call handleViewChange with the preserved loop values
+        handleViewChange(startTime, endTime, preservedLoopStart, preservedLoopEnd);
+      }
+    } else {
+      // For short videos, no conversion is needed
+      // If auto-loop is enabled, set the loop region to match the view
+      if (autoLoopEnabled) {
+        appLog('[App] Auto-loop enabled, setting loop region to match view:', { start: startTime, end: endTime });
+        // Update userSetLoopRef since this is effectively a user action
+        userSetLoopRef.current = { start: startTime, end: endTime };
+        setLoopStartWithLogging(startTime);
+        setLoopEndWithLogging(endTime);
+        
+        // Call handleViewChange with the new loop region
+        handleViewChange(startTime, endTime, startTime, endTime);
+      } else {
+        // Call handleViewChange with the preserved loop values
+        handleViewChange(startTime, endTime, preservedLoopStart, preservedLoopEnd);
+      }
     }
   };
 
@@ -2322,14 +2381,31 @@ const resetPitchDetectionSettings = useCallback(() => {
                         const xMax = chart.scales.x.max;
                         appLog('Setting loop to visible region:', xMin, xMax);
                         
-                        // Update userSetLoopRef since this is a user action
-                        userSetLoopRef.current = { start: xMin, end: xMax };
-                        
-                        setLoopStartWithLogging(xMin);
-                        setLoopEndWithLogging(xMax);
-                        const media = getActiveMediaElement();
-                        if (media) {
-                          media.currentTime = xMin;
+                        // For long videos, convert normalized chart times to actual video times
+                        if (pitchManager.current.isLongVideoFile() && currentSegment) {
+                          const videoStart = pitchManager.current.normalizedToVideoTime(xMin);
+                          const videoEnd = pitchManager.current.normalizedToVideoTime(xMax);
+                          
+                          // Update userSetLoopRef since this is a user action
+                          userSetLoopRef.current = { start: videoStart, end: videoEnd };
+                          
+                          setLoopStartWithLogging(videoStart);
+                          setLoopEndWithLogging(videoEnd);
+                          const media = getActiveMediaElement();
+                          if (media) {
+                            media.currentTime = videoStart;
+                          }
+                        } else {
+                          // For short videos, no conversion needed
+                          // Update userSetLoopRef since this is a user action
+                          userSetLoopRef.current = { start: xMin, end: xMax };
+                          
+                          setLoopStartWithLogging(xMin);
+                          setLoopEndWithLogging(xMax);
+                          const media = getActiveMediaElement();
+                          if (media) {
+                            media.currentTime = xMin;
+                          }
                         }
                       } else {
                         appLog('Chart or x scale not available');
@@ -2380,14 +2456,20 @@ const resetPitchDetectionSettings = useCallback(() => {
                 pitches={nativePitchData.pitches}
                 label="Native Pitch (Hz)"
                 color="#388e3c"
-                loopStart={loopStart}
-                loopEnd={loopEnd}
+                loopStart={pitchManager.current.isLongVideoFile() && currentSegment ? 
+                  pitchManager.current.videoToNormalizedTime(loopStart) : 
+                  loopStart}
+                loopEnd={pitchManager.current.isLongVideoFile() && currentSegment ? 
+                  pitchManager.current.videoToNormalizedTime(loopEnd) : 
+                  loopEnd}
                 yFit={getNativeYAxisRange()}
-                playbackTime={nativePlaybackTime}
+                playbackTime={pitchManager.current.isLongVideoFile() && currentSegment ? 
+                  pitchManager.current.videoToNormalizedTime(nativePlaybackTime) : 
+                  nativePlaybackTime}
                 onLoopChange={onLoopChangeHandler}
                 onViewChange={onViewChangeHandler}
                 totalDuration={pitchManager.current.isLongVideoFile() && currentSegment ? 
-                  currentSegment.endTime - currentSegment.startTime : 
+                  pitchManager.current.getSegmentDuration() : 
                   pitchManager.current.getTotalDuration()}
                 initialViewDuration={undefined}
                 yAxisConfig={{
