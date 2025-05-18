@@ -2188,6 +2188,27 @@ const resetPitchDetectionSettings = useCallback(() => {
       });
       
       setNativePitchData(enhancedData);
+      
+      // Wait for the chart to update with the new data, then set the loop region
+      setTimeout(() => {
+        if (nativeChartInstance && nativeChartInstance.scales && nativeChartInstance.scales.x) {
+          const xMin = nativeChartInstance.scales.x.min;
+          const xMax = nativeChartInstance.scales.x.max;
+          console.log('[App] Automatically setting loop to match extracted segment:', { xMin, xMax });
+          
+          // For long videos, convert normalized chart times to actual video times
+          if (segment) {
+            const videoStart = pitchManager.current.normalizedToVideoTime(xMin);
+            const videoEnd = pitchManager.current.normalizedToVideoTime(xMax);
+            
+            // Update userSetLoopRef
+            userSetLoopRef.current = { start: videoStart, end: videoEnd };
+            
+            setLoopStartWithLogging(videoStart);
+            setLoopEndWithLogging(videoEnd);
+          }
+        }
+      }, 100); // Small delay to ensure the chart has updated
     } catch (error) {
       console.error('[App] Error extracting pitch data:', error);
     } finally {
