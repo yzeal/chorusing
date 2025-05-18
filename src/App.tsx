@@ -280,6 +280,8 @@ const App: React.FC = () => {
 
 
 
+// Get the chart instance reference for the user recording
+
   const [nativeChartInstance, setNativeChartInstance] = useState<ExtendedChart | null>(null);
 
   // Add drag state
@@ -305,6 +307,9 @@ const App: React.FC = () => {
 
   // Add a flag to indicate if the recording is a user recording
   const [isUserRecording, setIsUserRecording] = useState(false);
+
+  // Add state for browsing mode (prevents looping when enabled)
+  const [isBrowsingMode, setIsBrowsingMode] = useState(false);
 
   // Get the chart instance reference for the user recording
   const [userChartInstance, setUserChartInstance] = useState<ExtendedChart | null>(null);
@@ -1205,9 +1210,12 @@ const App: React.FC = () => {
   React.useEffect(() => {
     const media = getActiveMediaElement();
     if (!media) return;
+    
+    // Don't apply any looping if browsing mode is enabled
+    if (isBrowsingMode) return;
+    
     let timeout: NodeJS.Timeout | null = null;
     
-    // Only consider seeking state when auto-loop is enabled
     // When auto-loop is disabled, we should maintain normal looping behavior regardless of seeking
     const shouldConsiderSeekingState = autoLoopEnabled;
     const shouldApplyLoop = shouldConsiderSeekingState ? !isUserSeeking : true;
@@ -1345,7 +1353,7 @@ const App: React.FC = () => {
     return () => {
       if (timeout) clearTimeout(timeout);
     };
-  }, [nativePlaybackTime, loopStart, loopEnd, loopDelay, isUserSeeking, autoLoopEnabled]);
+  }, [nativePlaybackTime, loopStart, loopEnd, loopDelay, isUserSeeking, autoLoopEnabled, isBrowsingMode]);
 
   // Add event listeners to detect when user is seeking
   React.useEffect(() => {
@@ -2111,6 +2119,8 @@ const resetPitchDetectionSettings = useCallback(() => {
     };
   });
 
+  
+
   // Add function to save shortcuts
   const saveKeyboardShortcut = useCallback((action: string, key: string) => {
     setKeyboardShortcuts(prev => {
@@ -2330,15 +2340,32 @@ const resetPitchDetectionSettings = useCallback(() => {
                     maxWidth: '100%'
                   }}
                 />
-                {/* Add Extract Pitch Curve button for long videos */}
-                {pitchManager.current.isLongVideoFile() && (
+              </div>
+            )}
+            
+            {/* Add controls for long videos */}
+            {nativeMediaUrl && pitchManager.current.isLongVideoFile() && (
+              <div style={{ 
+                marginTop: '0.5rem', 
+                marginBottom: '0.75rem',
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div style={{ fontWeight: 'bold', marginRight: '1rem' }}>
+                  Video/Audio browsing controls:
+                </div>
+                <div style={{ 
+                  display: 'flex', 
+                  flexDirection: 'row',
+                  alignItems: 'center', 
+                  gap: '1rem'
+                }}>
                   <button
                     onClick={handleExtractPitch}
                     disabled={isExtractingPitch}
                     style={{
-                      position: 'absolute',
-                      bottom: '1rem',
-                      right: '1rem',
                       padding: '0.5rem 1rem',
                       backgroundColor: '#1976d2',
                       color: 'white',
@@ -2350,7 +2377,16 @@ const resetPitchDetectionSettings = useCallback(() => {
                   >
                     {isExtractingPitch ? 'Extracting...' : 'Extract Pitch Curve'}
                   </button>
-                )}
+                  
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={isBrowsingMode}
+                      onChange={(e) => setIsBrowsingMode(e.target.checked)}
+                    />
+                    Don't loop, I'm browsing!
+                  </label>
+                </div>
               </div>
             )}
             {/* Loop selection and delay controls (moved above the curve) */}
