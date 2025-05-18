@@ -580,7 +580,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
     // 2. This is an initial load/reset AND
     //    - This is NOT a jump-to-playback operation AND
     //    - The user is not actively interacting with the chart AND
-    //    - For short recordings <= 20s: show full range
+    //    - For short recordings <= 30s: show full range
     //    - For long native recordings: respect initialViewDuration
     // 3. OR if we need to force a wider view on mobile (0-1s bug fix)
     if (isUserRecording || 
@@ -598,7 +598,7 @@ const PitchGraphWithControls = (props: PitchGraphWithControlsProps) => {
         });
       }
       
-      const updatedRange = isUserRecording || (!initialViewDuration && newMax <= 20) ? {
+      const updatedRange = isUserRecording || (!initialViewDuration && newMax <= 30) ? {
         min: 0,
         max: newMax
       } : initialViewDuration ? {
