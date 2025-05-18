@@ -2445,7 +2445,7 @@ const resetPitchDetectionSettings = useCallback(() => {
                   </button>
                 </div>
                 
-                <div className="loop-controls-row">
+                <div className="loop-controls-row loop-delay-container">
                   <span>Loop delay (ms):</span>
                   <input
                     type="number"
@@ -2504,7 +2504,7 @@ const resetPitchDetectionSettings = useCallback(() => {
                 </div>
                 
                 <div className="loop-controls-row">
-                  <label className="auto-loop-label">
+                  <label className="auto-loop-label" style={{ display: 'none'}}>
                     <input
                       type="checkbox"
                       checked={autoLoopEnabled}
@@ -3605,6 +3605,10 @@ const resetPitchDetectionSettings = useCallback(() => {
           button, input, select {
             font-size: 0.95rem !important;
             padding: 4px 8px !important;
+          }
+
+          .loop-delay-container {
+            display: none !important;
           }
           
           .auto-loop-label {
