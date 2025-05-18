@@ -2678,10 +2678,18 @@ const resetPitchDetectionSettings = useCallback(() => {
               
               <div className="guide-section">
                 <h3>Technical Considerations</h3>
+
+                
+                <h4>Native Recording Length</h4>
+                <p>
+                  There are some limitations to the length of native recordings that can be used. For PC users, the limit is 1.5 hours.<br />
+                  Loading large video files on mobile devices can be even more problematic due to much stricter browser memory limits. Consider editing large files or making short screen recordings of segments you want to practice. Especially on mobile, starting a screen recording is usually only one swipe away!
+                </p>
+
+                <h4>User Recording Length</h4>
                 <p>
                   While there is no hard limit on recording length, browser performance may degrade with very long recordings, especially on mobile devices. 
                   The app has been optimized for recordings in the 5-30 second range, which is ideal for focused practice. 
-                  Loading large video files on mobile devices can likewise be problematic. Consider editing large files or making short screen recordings of segments you want to practice.
                 </p>
                 
                 <h4>Caution for iPhone Users</h4>
@@ -2731,9 +2739,9 @@ const resetPitchDetectionSettings = useCallback(() => {
                 <ul>
                   <li><strong>Drag loop selection edges</strong>: Drag the blue edges of the loop selection area on the graph to select the segment you want to practice</li>
                   <li><strong>Drag graph edges</strong>: Drag from the margins of the graph to bring the loop selection edges into your current view any time</li>
-                  <li><strong>Auto-loop checkbox</strong>: When enabled, the loop region will automatically match the visible area when you pan</li>
-                  <li><strong>Loop delay</strong>: Adjusts the pause time (in milliseconds) between loop repetitions</li>
-                  <li><strong>Jump to playback</strong>: Jumps the view to center around the current playback position (only available for long videos)</li>
+                  <li><strong>Extract Pitch Curve</strong>: Extracts 20s of audio from the current playback position and displays the pitch curve for that segment (only available for long videos)</li>
+                  <li><strong>Don't loop, I'm browsing!</strong>: When enabled, allows you to browse native recordings without looping (only available for long videos)</li>
+                  <li><strong>Loop delay</strong>: Adjusts the pause time (in milliseconds) between loop repetitions, PC only</li>
                 </ul>
               </div>
               
