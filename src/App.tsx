@@ -483,8 +483,7 @@ const App: React.FC = () => {
     userSetLoopRef.current = null;
     appLog('[App] New file loaded, clearing user-set loop region');
     
-    // Reset browsing mode when loading a new file
-    setIsBrowsingMode(false);
+    // We'll set the browsing mode based on file length later in this function
 
     // Use the existing file handling logic
     const url = URL.createObjectURL(file);
@@ -500,6 +499,9 @@ const App: React.FC = () => {
         const initialData = pitchManager.current.isLongVideoFile() ? 
           { times: [], pitches: [] } : 
           pitchManager.current.getPitchDataForTimeRange(0, pitchManager.current.getTotalDuration());
+        
+        // Set browsing mode based on file length
+        setIsBrowsingMode(pitchManager.current.isLongVideoFile());
         
         // Only apply smoothing for short videos
         if (!pitchManager.current.isLongVideoFile()) {
@@ -530,7 +532,10 @@ const App: React.FC = () => {
         const initialData = pitchManager.current.isLongVideoFile() ? 
           { times: [], pitches: [] } : 
           pitchManager.current.getPitchDataForTimeRange(0, pitchManager.current.getTotalDuration());
-
+        
+        // Set browsing mode based on file length
+        setIsBrowsingMode(pitchManager.current.isLongVideoFile());
+        
         // Only apply smoothing for short videos
         if (!pitchManager.current.isLongVideoFile()) {
           const smoothingWindowSize = separateSmoothingSettings ? 
@@ -662,8 +667,7 @@ const App: React.FC = () => {
     userSetLoopRef.current = null;
     appLog('[App] New file loaded, clearing user-set loop region');
     
-    // Reset browsing mode when loading a new file
-    setIsBrowsingMode(false);
+    // We'll set the browsing mode based on file length later in this function
     
     const url = URL.createObjectURL(file);
     setNativeMediaUrl(url);
@@ -678,7 +682,10 @@ const App: React.FC = () => {
         const initialData = pitchManager.current.isLongVideoFile() ? 
           { times: [], pitches: [] } : 
           pitchManager.current.getPitchDataForTimeRange(0, pitchManager.current.getTotalDuration());
-
+        
+        // Set browsing mode based on file length
+        setIsBrowsingMode(pitchManager.current.isLongVideoFile());
+        
         // Only apply smoothing for short videos
         if (!pitchManager.current.isLongVideoFile()) {
           const smoothingWindowSize = separateSmoothingSettings ? 
@@ -708,7 +715,10 @@ const App: React.FC = () => {
         const initialData = pitchManager.current.isLongVideoFile() ? 
           { times: [], pitches: [] } : 
           pitchManager.current.getPitchDataForTimeRange(0, pitchManager.current.getTotalDuration());
-
+        
+        // Set browsing mode based on file length
+        setIsBrowsingMode(pitchManager.current.isLongVideoFile());
+        
         // Only apply smoothing for short videos
         if (!pitchManager.current.isLongVideoFile()) {
           const smoothingWindowSize = separateSmoothingSettings ? 
@@ -2363,23 +2373,23 @@ const resetPitchDetectionSettings = useCallback(() => {
                 marginBottom: '0.75rem',
                 display: 'flex',
                 flexDirection: 'row',
-                justifyContent: 'space-between',
+                justifyContent: 'center',
                 alignItems: 'center'
               }}>
-                <div style={{ fontWeight: 'bold', marginRight: '1rem' }}>
+                <div className="browse-controls" style={{marginRight: '1rem' }}>
                   {nativePitchData.times.length === 0 ? (
                     `Browse ${nativeMediaType || 'media'}, then extract 20s of pitch curve data from there:`
                   ) : (
                     `${nativeMediaType === 'video' ? 'Video' : 'Audio'} browsing controls:`
                   )}
                 </div>
-                <div style={{ 
-                  display: 'flex', 
-                  flexDirection: 'row',
-                  alignItems: 'center', 
-                  gap: '1rem'
-                }}>
-                  <button
+                  <div style={{ 
+                    display: 'flex', 
+                    flexDirection: 'row',
+                    alignItems: 'center', 
+                    gap: '1rem'
+                  }}>
+                  <button className="browse-controls"
                     onClick={handleExtractPitch}
                     disabled={isExtractingPitch}
                     style={{
@@ -2397,7 +2407,7 @@ const resetPitchDetectionSettings = useCallback(() => {
                   
                   {/* Only show the checkbox after pitch data is extracted */}
                   {nativePitchData.times.length > 0 && (
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <label className="browse-controls" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <input
                         type="checkbox"
                         checked={isBrowsingMode}
@@ -3365,6 +3375,11 @@ const resetPitchDetectionSettings = useCallback(() => {
           font-size: ${subtitleFontSize}em;
           background-color: rgba(0, 0, 0, 0.8);
           color: white;
+        }
+
+        /* Browse controls styling */
+        .browse-controls {
+          font-size: 0.8rem !important;
         }
 
         
