@@ -191,8 +191,8 @@ export class PitchDataManager {
     if (!this.currentFile || !this.isLongVideo) return;
 
     // Calculate segment bounds
-    let startTime = Math.max(0, currentTime - 2);
-    let endTime = Math.min(this.totalDuration, currentTime + 18);
+    let startTime = Math.max(0, currentTime - 0.5);
+    let endTime = Math.min(this.totalDuration, currentTime + 19.5);
 
     // Adjust for edge cases
     if (startTime === 0) {
