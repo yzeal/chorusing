@@ -5,6 +5,63 @@
     <link rel="icon" type="image/svg+xml" href="./vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Pitch Accent Chorusing</title>
+    <style>
+      /* Prevent zooming on iOS but allow normal touch behavior for the pitch curve */
+      html, body {
+        -webkit-text-size-adjust: 100%;
+      }
+      
+      /* Apply touch restrictions to everything except the pitch curve */
+      body > *:not(#pitch-curve-container):not(#root) {
+        touch-action: pan-x pan-y;
+      }
+    </style>
+    <script>
+      // Selective zoom prevention that excludes the pitch curve component
+      document.addEventListener('DOMContentLoaded', function() {
+        // Function to check if an element is part of the pitch curve
+        function isPitchCurveElement(element) {
+          // Check if element or any parent has class/id related to pitch curve
+          while (element && element !== document.body) {
+            // Match likely pitch curve container classes/ids
+            if (element.id === 'pitch-curve-container' || 
+                element.id === 'pitch-graph' ||
+                element.className.includes('pitch-curve') ||
+                element.className.includes('pitch-graph')) {
+              return true;
+            }
+            element = element.parentElement;
+          }
+          return false;
+        }
+        
+        // Prevent zoom on double tap for iOS, but allow on pitch curve
+        document.addEventListener('touchstart', function(event) {
+          if (event.touches.length > 1 && !isPitchCurveElement(event.target)) {
+            event.preventDefault();
+          }
+        }, { passive: false });
+        
+        // Prevent zoom on pinch for iOS, but allow on pitch curve
+        document.addEventListener('touchmove', function(event) {
+          if (event.scale !== 1 && !isPitchCurveElement(event.target)) {
+            event.preventDefault();
+          }
+        }, { passive: false });
+        
+        // Double-tap prevention, except on pitch curve
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+          if (!isPitchCurveElement(event.target)) {
+            const now = Date.now();
+            if (now - lastTouchEnd < 300) {
+              event.preventDefault();
+            }
+            lastTouchEnd = now;
+          }
+        }, { passive: false });
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>
