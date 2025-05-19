@@ -2445,8 +2445,8 @@ const resetPitchDetectionSettings = useCallback(() => {
                   </button>
                 </div>
                 
-                <div className="loop-controls-row loop-delay-container">
-                  <span>Loop delay (ms):</span>
+                <div className="loop-controls-row">
+                  <span className="loop-delay-container">Loop delay (ms):</span>
                   <input
                     type="number"
                     min={0}
@@ -2454,7 +2454,7 @@ const resetPitchDetectionSettings = useCallback(() => {
                     step={50}
                     value={loopDelay}
                     onChange={e => setLoopDelay(Number(e.target.value))}
-                    className="loop-delay-input"
+                    className="loop-delay-input  loop-delay-container"
                   />
                   <button
                     className="loop-visible-button"
